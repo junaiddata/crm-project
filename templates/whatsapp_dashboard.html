@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Manager — CRM</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+      color: #fff;
+      padding: 0 28px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon {
+      width: 38px; height: 38px; background: rgba(255,255,255,0.15);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .header-sub   { font-size: 11.5px; color: #6ee7b7; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-link {
+      color: rgba(255,255,255,0.8); text-decoration: none;
+      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      transition: all 0.15s;
+    }
+    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      display: flex; gap: 12px; padding: 20px 28px 0;
+    }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px; flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+      transition: box-shadow 0.15s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
+    .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 28px; flex-wrap: wrap;
+    }
+    .search-wrap {
+      display: flex; align-items: center; gap: 7px;
+      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+      padding: 0 12px; height: 38px; min-width: 260px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-wrap:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+    .search-wrap svg { color: #94a3b8; flex-shrink: 0; }
+    .search-wrap input {
+      border: none; outline: none; font-size: 13px; width: 100%;
+      background: transparent; color: #0f172a; font-family: inherit;
+    }
+    .search-wrap input::placeholder { color: #94a3b8; }
+
+    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tab {
+      padding: 6px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; color: #64748b; background: #fff;
+      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
+    }
+    .filter-tab:hover { border-color: #10b981; color: #065f46; background: #f0fdf4; }
+    .filter-tab.active { background: #065f46; color: #fff; border-color: #065f46; }
+    .tab-count {
+      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+      margin-left: 4px; background: rgba(0,0,0,0.07); color: inherit;
+    }
+    .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
+
+    /* ── Feed ── */
+    .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── Conversation Card ── */
+    .conv-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+      border-left: 4px solid #f59e0b;
+    }
+    .conv-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+    .conv-card.is-replied { border-left-color: #e2e8f0; }
+
+    /* ── Card top row ── */
+    .card-top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px 0;
+    }
+    .sender-row { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13px;
+      background: linear-gradient(135deg, #065f46, #10b981); color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .conv-card.is-replied .avatar { background: #e2e8f0; color: #94a3b8; }
+    .sender-info { display: flex; flex-direction: column; gap: 1px; }
+    .sender-num {
+      font-size: 14.5px; font-weight: 700; color: #0f172a;
+      text-decoration: none; transition: color 0.12s;
+    }
+    .sender-num:hover { color: #059669; }
+    .sender-meta { font-size: 11.5px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
+    .msg-count-chip {
+      display: inline-flex; align-items: center;
+      background: #f1f5f9; color: #475569; border-radius: 4px;
+      padding: 1px 6px; font-size: 11px; font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .badge-new      { background: #fef3c7; color: #92400e; }
+    .badge-replied  { background: #d1fae5; color: #065f46; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Message bubbles ── */
+    .card-messages { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .msg-bubble-wrap { position: relative; }
+    .msg-bubble {
+      font-size: 13.5px; color: #334155; line-height: 1.6;
+      background: #f8fafc; border-radius: 0 8px 8px 8px;
+      padding: 9px 14px;
+      border-left: 3px solid #10b981;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      cursor: default;
+    }
+    .conv-card.is-replied .msg-bubble { border-left-color: #e2e8f0; color: #64748b; background: #fafafa; }
+
+    /* Full-text tooltip shown on hover */
+    .msg-tooltip {
+      display: none;
+      position: absolute;
+      left: 0; top: calc(100% + 6px);
+      z-index: 50;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 12.5px;
+      line-height: 1.6;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+      max-width: 420px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      pointer-events: none;
+    }
+    .msg-tooltip::before {
+      content: '';
+      position: absolute;
+      top: -6px; left: 18px;
+      border: 6px solid transparent;
+      border-top: none;
+      border-bottom-color: #1e293b;
+    }
+    .msg-bubble-wrap:hover .msg-tooltip { display: block; }
+
+    /* ── Reply sent indicator ── */
+    .reply-sent {
+      display: flex; align-items: flex-start; gap: 9px;
+      background: #f0fdf4; border-top: 1px solid #d1fae5;
+      padding: 10px 18px;
+      font-size: 12.5px; color: #065f46;
+    }
+    .reply-sent svg { flex-shrink: 0; margin-top: 2px; color: #10b981; }
+    .reply-sent-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #047857; margin-bottom: 2px; }
+    .reply-sent-text { color: #334155; font-size: 13px; }
+
+    /* ── Action bar ── */
+    .card-actions {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 18px 14px;
+      border-top: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 13px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      border: 1px solid transparent; cursor: pointer; font-family: inherit;
+      transition: all 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .action-btn svg { flex-shrink: 0; }
+
+    .btn-view-chat  { background: #f0fdf4; color: #065f46; border-color: #bbf7d0; }
+    .btn-view-chat:hover { background: #dcfce7; border-color: #86efac; }
+
+    .btn-add-lead   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .btn-add-lead:hover { background: #dbeafe; border-color: #93c5fd; }
+
+    .btn-reply      { background: #065f46; color: #fff; border-color: #065f46; }
+    .btn-reply:hover { background: #047857; border-color: #047857; }
+
+    .btn-undo       { background: transparent; color: #94a3b8; border-color: #e2e8f0; }
+    .btn-undo:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+    /* ── Reply compose box ── */
+    .reply-box { display: none; padding: 0 18px 16px; }
+    .reply-box.open { display: block; }
+    .reply-box-inner {
+      background: #f8fafc; border: 1.5px solid #d1fae5;
+      border-radius: 10px; overflow: hidden;
+    }
+    .reply-box-inner:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+    .reply-box textarea {
+      width: 100%; min-height: 72px; padding: 10px 14px; resize: vertical;
+      border: none; outline: none; font-family: inherit;
+      font-size: 13.5px; color: #0f172a; background: transparent;
+      display: block;
+    }
+    .reply-box-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: #f0fdf4; border-top: 1px solid #d1fae5;
+    }
+    .reply-placeholder-hint { font-size: 11.5px; color: #94a3b8; }
+    .reply-btns { display: flex; gap: 6px; }
+    .btn-send-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 16px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+      background: #059669; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .btn-send-reply:hover:not(:disabled) { background: #047857; }
+    .btn-send-reply:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .btn-cancel-reply:hover { background: #f1f5f9; }
+    .error-msg {
+      font-size: 12px; color: #dc2626; background: #fef2f2;
+      border: 1px solid #fecaca; border-radius: 6px;
+      padding: 7px 12px; margin-top: 8px; display: none;
+    }
+
+    /* ── Empty state ── */
+    .empty-wrap { flex: 1; padding: 0 28px 32px; }
+    .empty-state {
+      background: #fff; border-radius: 12px; text-align: center;
+      padding: 64px 20px; color: #94a3b8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .empty-state p { font-size: 14px; margin-top: 14px; }
+
+    footer {
+      padding: 14px 28px; text-align: center; font-size: 11.5px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    footer a { color: #10b981; text-decoration: none; }
+    footer code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      display: none; align-items: center; gap: 8px;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Company Logo"
+         style="height:38px; object-fit:contain; max-width:130px; display:block; filter:brightness(0) invert(1);">
+    <div>
+      <div class="header-title">WhatsApp Manager</div>
+      <div class="header-sub">{{ total }} message{{ total|pluralize }} · {{ unreplied }} pending</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="/crm/" class="header-link">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+      Leads Dashboard
+    </a>
+    <a href="/calls/" class="header-link">Incoming Calls</a>
+    <a href="/" class="header-link">← Home</a>
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats-strip">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#d1fae5;color:#065f46;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ total }}</div>
+      <div class="stat-lbl">Total messages</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ unreplied }}</div>
+      <div class="stat-lbl">Needs reply</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;color:#059669;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ replied_count }}</div>
+      <div class="stat-lbl">Replied</div>
+    </div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <form method="get" style="display:contents;">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input name="q" value="{{ search }}" placeholder="Search by number or message…" autocomplete="off">
+    </div>
+  </form>
+
+  <div class="filter-tabs">
+    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
+      All <span class="tab-count">{{ total }}</span>
+    </a>
+    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
+      Needs reply <span class="tab-count">{{ unreplied }}</span>
+    </a>
+    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
+      Replied <span class="tab-count">{{ replied_count }}</span>
+    </a>
+  </div>
+
+  <div class="controls-right">{{ shown_count }} conversation{{ shown_count|pluralize }} shown</div>
+</div>
+
+<!-- Conversation feed -->
+{% if groups %}
+<div class="feed">
+  {% for group in groups %}
+  {% with gid=group.reply_pk %}
+
+  <!-- Store lead data -->
+  <script>
+    window._waLeadData = window._waLeadData || {};
+    window._waLeadData[{{ gid }}] = {
+      sender: '{{ group.sender|escapejs }}',
+      date: '{{ group.first_time|date:"Y-m-d" }}',
+      query: '{% for msg in group.messages %}{{ msg.text_body|escapejs }}{% if not forloop.last %}\n{% endif %}{% endfor %}'
+    };
+  </script>
+
+  <div class="conv-card {% if group.all_replied %}is-replied{% endif %}" id="card-{{ gid }}">
+
+    <!-- Top row: avatar + sender info + badge -->
+    <div class="card-top">
+      <div class="sender-row">
+        <div class="avatar">{{ group.sender|slice:"-2:" }}</div>
+        <div class="sender-info">
+          <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">+{{ group.sender }}</a>
+          <div class="sender-meta">
+            {{ group.first_time|date:"d M Y · H:i" }}
+            {% if group.messages|length > 1 %}
+              <span class="msg-count-chip">{{ group.messages|length }} messages</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <span class="status-badge {% if group.all_replied %}badge-replied{% else %}badge-new{% endif %}" id="badge-{{ gid }}">
+        <span class="badge-dot" style="background:{% if group.all_replied %}#10b981{% else %}#f59e0b{% endif %};"></span>
+        {% if group.all_replied %}Replied{% else %}New{% endif %}
+      </span>
+    </div>
+
+    <!-- Message bubbles -->
+    <div class="card-messages">
+      {% for msg in group.messages %}
+      <div class="msg-bubble-wrap">
+        <div class="msg-bubble">{{ msg.text_body }}</div>
+        <div class="msg-tooltip">{{ msg.text_body }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Reply sent indicator -->
+    {% if group.reply_text %}
+    <div class="reply-sent" id="reply-sent-{{ gid }}">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      <div>
+        <div class="reply-sent-label">Your reply</div>
+        <div class="reply-sent-text" id="reply-text-{{ gid }}">{{ group.reply_text }}</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="reply-sent" id="reply-sent-{{ gid }}" style="display:none;">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      <div>
+        <div class="reply-sent-label">Your reply</div>
+        <div class="reply-sent-text" id="reply-text-{{ gid }}"></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Action bar -->
+    <div class="card-actions" id="actions-{{ gid }}">
+      <a href="/whatsapp/chat/{{ group.sender }}/" class="action-btn btn-view-chat">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
+        View Chat
+      </a>
+      <button class="action-btn btn-add-lead" onclick="sendToLeads({{ gid }})">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+        Add to Leads
+      </button>
+      {% if group.any_unreplied %}
+      <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Quick Reply
+      </button>
+      {% else %}
+      <button class="action-btn btn-undo" onclick="undoReply({{ gid }}, {{ group.all_ids|join:',' }})">↩ Mark as new</button>
+      {% endif %}
+    </div>
+
+    <!-- Reply compose -->
+    <div class="reply-box" id="reply-box-{{ gid }}">
+      <div class="reply-box-inner">
+        <textarea id="textarea-{{ gid }}" placeholder="Type your reply to +{{ group.sender }}…"></textarea>
+        <div class="reply-box-footer">
+          <span class="reply-placeholder-hint">Enter to add a line · click Send when ready</span>
+          <div class="reply-btns">
+            <button class="btn-cancel-reply" onclick="closeReply({{ gid }})">Cancel</button>
+            <button class="btn-send-reply" id="send-btn-{{ gid }}"
+              onclick="sendReply({{ gid }}, '{{ group.sender|escapejs }}', [{{ group.all_ids|join:',' }}])">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+              Send Reply
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="err-{{ gid }}"></div>
+    </div>
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-wrap">
+  <div class="empty-state">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="#cbd5e1"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    <p>{% if search %}No messages match "{{ search }}"{% elif active_filter == 'unreplied' %}All caught up — no pending messages{% elif active_filter == 'replied' %}No replied messages yet{% else %}No WhatsApp messages yet{% endif %}</p>
+  </div>
+</div>
+{% endif %}
+
+<footer>
+  <a href="/">← Home</a> &nbsp;·&nbsp; <a href="/crm/">Leads Dashboard</a>
+  &nbsp;·&nbsp; Webhook: <code>/api/webhook/whatsapp/</code>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  const CSRF = '{{ csrf_token }}';
+
+  function openReply(id) {
+    document.getElementById('reply-box-' + id).classList.add('open');
+    document.getElementById('textarea-' + id).focus();
+  }
+
+  function closeReply(id) {
+    document.getElementById('reply-box-' + id).classList.remove('open');
+    document.getElementById('textarea-' + id).value = '';
+    document.getElementById('err-' + id).style.display = 'none';
+  }
+
+  async function sendReply(id, sender, allIds) {
+    const textarea = document.getElementById('textarea-' + id);
+    const message  = textarea.value.trim();
+    if (!message) { textarea.focus(); return; }
+
+    const btn = document.getElementById('send-btn-' + id);
+    const err = document.getElementById('err-' + id);
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    err.style.display = 'none';
+
+    const alsoMarkIds = (allIds || []).filter(i => i !== id);
+
+    try {
+      const res  = await fetch('/api/whatsapp/' + id + '/reply/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ message, also_mark_ids: alsoMarkIds }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        const badge = document.getElementById('badge-' + id);
+        badge.className = 'status-badge badge-replied';
+        badge.innerHTML = '<span class="badge-dot" style="background:#10b981;"></span> Replied';
+
+        document.getElementById('reply-text-' + id).textContent = message;
+        document.getElementById('reply-sent-' + id).style.display = 'flex';
+
+        const card = document.getElementById('card-' + id);
+        card.classList.add('is-replied');
+
+        document.getElementById('actions-' + id).innerHTML =
+          '<button class="action-btn btn-undo" onclick="undoReply(' + id + ',[' + (allIds||[]).join(',') + '])">↩ Mark as new</button>';
+
+        closeReply(id);
+        showToast('Reply sent to +' + sender, '#059669');
+      } else {
+        err.textContent = data.error || 'Failed to send. Check API credentials.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg> Send Reply';
+      }
+    } catch {
+      err.textContent = 'Network error — is the server running?';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg> Send Reply';
+    }
+  }
+
+  async function undoReply(id, allIds) {
+    const alsoMarkIds = (allIds || []).filter(i => i !== id);
+    const res = await fetch('/api/whatsapp/' + id + '/reply/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ message: '', undo: true, also_mark_ids: alsoMarkIds }),
+    });
+    if (res.ok) location.reload();
+  }
+
+  async function sendToLeads(gid) {
+    const d = (window._waLeadData || {})[gid];
+    if (!d) return;
+
+    const btn = document.querySelector('#card-' + gid + ' .btn-add-lead');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+
+    try {
+      const res = await fetch('/api/leads/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          date: d.date,
+          mobileNo: d.sender,
+          platform: 'Whatsapp',
+          items: d.query,
+        }),
+      });
+      if (res.ok) {
+        showToast('Lead created for +' + d.sender, '#1d4ed8');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || err.date || 'Failed to create lead', '#dc2626');
+      }
+    } catch {
+      showToast('Network error', '#dc2626');
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+  }
+
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.style.cssText = 'display:flex;background:' + color + ';';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

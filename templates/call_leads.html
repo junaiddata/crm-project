@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Leads</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; color: #0f172a; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #1e4a7a 100%);
+    padding: 20px 28px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header-logo { width: 38px; height: 38px; opacity: .9; }
+  .header-title { color: #fff; font-size: 20px; font-weight: 700; }
+  .header-links { margin-left: auto; display: flex; gap: 10px; }
+  .header-link {
+    color: rgba(255,255,255,.75); text-decoration: none;
+    font-size: 13px; padding: 6px 14px; border-radius: 6px;
+    transition: background .15s;
+  }
+  .header-link:hover, .header-link.active { background: rgba(255,255,255,.15); color: #fff; }
+
+  /* ── Stat cards ── */
+  .stats { display: flex; gap: 14px; padding: 20px 28px 0; flex-wrap: wrap; }
+  .stat-card {
+    background: #fff; border-radius: 12px; padding: 16px 22px;
+    flex: 1; min-width: 130px;
+    border-left: 4px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .stat-card.blue   { border-color: #3b82f6; }
+  .stat-card.red    { border-color: #ef4444; }
+  .stat-card.amber  { border-color: #f59e0b; }
+  .stat-card.gray   { border-color: #94a3b8; }
+  .stat-num   { font-size: 28px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin-top: 4px; }
+  .blue  .stat-num { color: #2563eb; }
+  .red   .stat-num { color: #dc2626; }
+  .amber .stat-num { color: #d97706; }
+  .gray  .stat-num { color: #64748b; }
+
+  /* ── Tabs + toolbar ── */
+  .toolbar { padding: 18px 28px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; background: #e2e8f0; border-radius: 8px; padding: 4px; }
+  .tab {
+    padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    text-decoration: none; color: #64748b; transition: all .15s;
+  }
+  .tab.active { background: #fff; color: #1a3a5c; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .tab:hover:not(.active) { color: #1a3a5c; }
+
+  .search-box {
+    margin-left: auto; display: flex; gap: 8px; align-items: center;
+  }
+  .search-box input, .search-box select {
+    padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+    font-size: 13px; background: #fff; outline: none;
+    transition: border .15s;
+  }
+  .search-box input:focus, .search-box select:focus { border-color: #3b82f6; }
+  .btn-apply {
+    padding: 8px 16px; background: #1a3a5c; color: #fff;
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ── Table container ── */
+  .table-wrap { padding: 16px 28px 40px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.06); font-size: 13px; }
+  thead { background: #f8fafc; }
+  th {
+    padding: 11px 12px; text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; color: #64748b;
+    border-bottom: 1px solid #e2e8f0; white-space: nowrap;
+  }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .badge-answered { background: #dcfce7; color: #166534; }
+  .badge-missed   { background: #fee2e2; color: #991b1b; }
+  .badge-rejected { background: #ffedd5; color: #9a3412; }
+  .badge-junk     { background: #f1f5f9; color: #64748b; }
+  .badge-irrelevant { background: #fef9c3; color: #854d0e; }
+
+  /* ── Editable cells ── */
+  .editable {
+    width: 100%; border: 1px solid transparent; border-radius: 6px;
+    padding: 5px 8px; font-size: 13px; font-family: inherit;
+    background: transparent; resize: none; outline: none;
+    transition: all .15s; color: #0f172a;
+    min-width: 100px;
+  }
+  .editable:hover { border-color: #e2e8f0; background: #f8fafc; }
+  .editable:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 2px #dbeafe; }
+  .editable::placeholder { color: #cbd5e1; }
+
+  /* ── File upload ── */
+  .file-cell { display: flex; flex-direction: column; gap: 5px; min-width: 130px; }
+  .file-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #1d4ed8; text-decoration: none; font-weight: 500;
+    padding: 3px 8px; border-radius: 4px; background: #eff6ff;
+    max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .file-link:hover { background: #dbeafe; }
+  .file-del {
+    background: none; border: none; color: #94a3b8; cursor: pointer;
+    font-size: 14px; padding: 1px 4px; border-radius: 3px; flex-shrink: 0;
+  }
+  .file-del:hover { color: #ef4444; background: #fef2f2; }
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: 500;
+    border: 1.5px dashed #cbd5e1; background: #f8fafc; color: #64748b;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .upload-btn:hover { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+
+  /* ── Follow-up with note ── */
+  .followup-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+
+  /* ── Return called button ── */
+  .btn-return {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid; cursor: pointer; transition: all .15s; white-space: nowrap;
+  }
+  .btn-return.pending  { border-color: #fca5a5; color: #dc2626; background: #fff5f5; }
+  .btn-return.done     { border-color: #6ee7b7; color: #059669; background: #f0fdf9; }
+  .btn-return:hover    { filter: brightness(.95); }
+
+  /* ── Action buttons ── */
+  .actions { display: flex; gap: 6px; }
+  .btn-action {
+    padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    border: 1.5px solid; cursor: pointer; transition: all .15s; background: transparent;
+  }
+  .btn-junk        { border-color: #94a3b8; color: #64748b; }
+  .btn-junk:hover  { background: #f1f5f9; }
+  .btn-irrelevant        { border-color: #fcd34d; color: #92400e; }
+  .btn-irrelevant:hover  { background: #fef9c3; }
+  .btn-restore           { border-color: #6ee7b7; color: #059669; }
+  .btn-restore:hover     { background: #f0fdf9; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── Follow-up overdue ── */
+  .overdue { color: #dc2626; font-weight: 600; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: #1e293b; color: #fff; padding: 10px 18px;
+    border-radius: 8px; font-size: 13px; display: none;
+    z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  }
+  .toast.show { display: block; animation: fadeInUp .2s ease; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+       class="header-logo" style="filter:brightness(0) invert(1);" alt="Logo">
+  <span class="header-title">Call Leads</span>
+  <div class="header-links">
+    <a href="/" class="header-link">Home</a>
+    <a href="/crm/" class="header-link">CRM Leads</a>
+    <a href="/whatsapp/" class="header-link">WhatsApp</a>
+    <a href="/calls/" class="header-link">Call Log</a>
+    <a href="/call-leads/" class="header-link active">Call Leads</a>
+  </div>
+</div>
+
+<!-- Stat cards -->
+<div class="stats">
+  <div class="stat-card blue">
+    <div class="stat-num">{{ total_active }}</div>
+    <div class="stat-label">Active Leads</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-num">{{ total_missed }}</div>
+    <div class="stat-label">Missed Calls</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-num">{{ total_followup }}</div>
+    <div class="stat-label">Follow-ups Due</div>
+  </div>
+  <div class="stat-card gray">
+    <div class="stat-num">{{ total_junk }}</div>
+    <div class="stat-label">Junk / Irrelevant</div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="tabs">
+    <a href="?tab=active"   class="tab {% if tab == 'active' %}active{% endif %}">Active</a>
+    <a href="?tab=missed"   class="tab {% if tab == 'missed' %}active{% endif %}">Missed</a>
+    <a href="?tab=followup" class="tab {% if tab == 'followup' %}active{% endif %}">Follow-ups</a>
+    <a href="?tab=junk"     class="tab {% if tab == 'junk' %}active{% endif %}">Junk</a>
+  </div>
+
+  <form method="get" class="search-box">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="text" name="q" value="{{ search }}" placeholder="Search number…" style="width:160px;">
+    <input type="date" name="from_date" value="{{ from_date }}" title="From date">
+    <input type="date" name="to_date" value="{{ to_date }}" title="To date">
+    <button type="submit" class="btn-apply">Filter</button>
+    {% if search or from_date or to_date %}
+    <a href="?tab={{ tab }}" style="color:#64748b;font-size:13px;text-decoration:none;">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Table -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Number</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th>Date &amp; Time</th>
+        <th>Device</th>
+        <th style="min-width:160px;">Query</th>
+        <th style="min-width:140px;">Quotation</th>
+        <th style="min-width:160px;">Follow Up</th>
+        {% if tab != 'junk' %}<th>Return Called?</th>{% endif %}
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if leads %}
+        {% for lead in leads %}
+        <tr id="lead-row-{{ lead.id }}">
+
+          <!-- # -->
+          <td style="color:#94a3b8;font-size:11px;">{{ forloop.counter }}</td>
+
+          <!-- Number -->
+          <td style="font-weight:700;font-size:14px;">{{ lead.caller_number }}</td>
+
+          <!-- Status -->
+          <td>
+            {% if lead.call_status == 'answered' %}
+              <span class="badge badge-answered"><span class="badge-dot" style="background:#22c55e;"></span>Answered</span>
+            {% elif lead.call_status == 'missed' %}
+              <span class="badge badge-missed"><span class="badge-dot" style="background:#ef4444;"></span>Missed</span>
+            {% else %}
+              <span class="badge badge-rejected"><span class="badge-dot" style="background:#f97316;"></span>Rejected</span>
+            {% endif %}
+          </td>
+
+          <!-- Duration -->
+          <td style="color:#64748b;" class="td-dur" data-seconds="{{ lead.duration }}"></td>
+
+          <!-- Date & Time -->
+          <td style="color:#64748b;white-space:nowrap;">{{ lead.call_time|date:"d M Y · H:i" }}</td>
+
+          <!-- Device -->
+          <td style="color:#64748b;font-size:12px;">{{ lead.received_by }}</td>
+
+          <!-- Query -->
+          <td>
+            <textarea
+              class="editable"
+              rows="1"
+              placeholder="Add query…"
+              onblur="saveField({{ lead.id }}, 'query', this.value)"
+              oninput="autoResize(this)">{{ lead.query }}</textarea>
+          </td>
+
+          <!-- Quotation (file upload) -->
+          <td>
+            <div class="file-cell" id="file-cell-{{ lead.id }}">
+              {% if lead.quotation_file %}
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <a class="file-link" href="{{ lead.quotation_file.url }}" target="_blank" title="{{ lead.quotation_filename }}">
+                    📎 {{ lead.quotation_filename|truncatechars:18 }}
+                  </a>
+                  <button class="file-del" onclick="deleteQuotation({{ lead.id }})" title="Remove">×</button>
+                </div>
+              {% else %}
+                <label class="upload-btn" for="qfile-{{ lead.id }}">
+                  📎 Upload file
+                </label>
+              {% endif %}
+              <input type="file" id="qfile-{{ lead.id }}" style="display:none;"
+                     onchange="uploadQuotation({{ lead.id }}, this)">
+            </div>
+          </td>
+
+          <!-- Follow Up (date + note) -->
+          <td>
+            <div class="followup-wrap">
+              <input
+                type="date"
+                class="editable"
+                value="{{ lead.follow_up|date:'Y-m-d' }}"
+                onchange="saveField({{ lead.id }}, 'follow_up', this.value)"
+                {% if lead.follow_up %}style="{% now "Y-m-d" as today_str %}{% if lead.follow_up|date:'Y-m-d' <= today_str %}color:#dc2626;font-weight:600;{% endif %}"{% endif %}>
+              <input
+                type="text"
+                class="editable"
+                placeholder="Add note…"
+                value="{{ lead.follow_up_note }}"
+                onblur="saveField({{ lead.id }}, 'follow_up_note', this.value)"
+                style="font-size:11px;color:#64748b;">
+            </div>
+          </td>
+
+          <!-- Return Called (only for missed, not junk tab) -->
+          {% if tab != 'junk' %}
+          <td>
+            {% if lead.call_status == 'missed' %}
+              <button
+                id="return-btn-{{ lead.id }}"
+                class="btn-return {% if lead.return_called %}done{% else %}pending{% endif %}"
+                onclick="toggleReturn({{ lead.id }}, this)">
+                {% if lead.return_called %}✓ Called Back{% else %}✕ Not Called{% endif %}
+              </button>
+              {% if lead.return_called_at %}
+                <div style="font-size:10px;color:#94a3b8;margin-top:3px;">
+                  {{ lead.return_called_at|date:"d M H:i" }}
+                  {% if lead.return_called %}
+                    <span style="color:#16a34a;font-size:10px;">· auto</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% else %}
+              <span style="color:#cbd5e1;font-size:12px;">—</span>
+            {% endif %}
+          </td>
+          {% endif %}
+
+          <!-- Actions -->
+          <td>
+            <div class="actions">
+              {% if tab == 'junk' %}
+                <button class="btn-action btn-restore" onclick="setStatus({{ lead.id }}, 'active', this)">Restore</button>
+              {% else %}
+                <button class="btn-action btn-junk"       onclick="setStatus({{ lead.id }}, 'junk', this)">Junk</button>
+                <button class="btn-action btn-irrelevant" onclick="setStatus({{ lead.id }}, 'irrelevant', this)">Irrelevant</button>
+              {% endif %}
+            </div>
+          </td>
+
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="11">
+            <div class="empty">
+              <div class="empty-icon">📞</div>
+              <div>No call leads found</div>
+              <div style="font-size:12px;margin-top:6px;">Incoming calls from the Android app will appear here automatically.</div>
+            </div>
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Duration formatting ──
+  document.querySelectorAll('.td-dur').forEach(td => {
+    const s = parseInt(td.dataset.seconds || '0');
+    td.textContent = s > 0 ? Math.floor(s/60) + 'm ' + (s%60) + 's' : '—';
+  });
+
+  // ── Auto-resize textarea ──
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+  document.querySelectorAll('textarea.editable').forEach(autoResize);
+
+  // ── Toast ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ── Save field ──
+  function saveField(id, field, value) {
+    const body = {};
+    body[field] = value;
+    fetch(`/api/call-leads/${id}/update/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    .then(r => r.json())
+    .then(() => showToast('Saved'))
+    .catch(() => showToast('Save failed'));
+  }
+
+  // ── Upload quotation file ──
+  function uploadQuotation(id, input) {
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append('quotation_file', input.files[0]);
+    fetch(`/api/call-leads/${id}/update/`, { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        const cell = document.getElementById('file-cell-' + id);
+        cell.innerHTML = `
+          <div style="display:flex;align-items:center;gap:4px;">
+            <a class="file-link" href="${data.url}" target="_blank" title="${data.name}">
+              📎 ${data.name.length > 18 ? data.name.slice(0,16)+'…' : data.name}
+            </a>
+            <button class="file-del" onclick="deleteQuotation(${id})" title="Remove">×</button>
+          </div>
+          <input type="file" id="qfile-${id}" style="display:none;" onchange="uploadQuotation(${id}, this)">`;
+        showToast('File uploaded');
+      }
+    })
+    .catch(() => showToast('Upload failed'));
+  }
+
+  // ── Delete quotation file ──
+  function deleteQuotation(id) {
+    const fd = new FormData();
+    fd.append('delete_quotation', '1');
+    fetch(`/api/call-leads/${id}/update/`, { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(() => {
+      const cell = document.getElementById('file-cell-' + id);
+      cell.innerHTML = `
+        <label class="upload-btn" for="qfile-${id}">📎 Upload file</label>
+        <input type="file" id="qfile-${id}" style="display:none;" onchange="uploadQuotation(${id}, this)">`;
+      showToast('File removed');
+    });
+  }
+
+  // ── Toggle return called ──
+  function toggleReturn(id, btn) {
+    fetch(`/api/call-leads/${id}/return-called/`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.return_called) {
+        btn.className = 'btn-return done';
+        btn.textContent = '✓ Called Back';
+        showToast('Marked as called back');
+      } else {
+        btn.className = 'btn-return pending';
+        btn.textContent = '✕ Not Called';
+        showToast('Unmarked');
+      }
+    });
+  }
+
+  // ── Set lead status ──
+  function setStatus(id, newStatus, btn) {
+    fetch(`/api/call-leads/${id}/status/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    .then(r => r.json())
+    .then(() => {
+      const row = document.getElementById('lead-row-' + id);
+      row.style.opacity = '0';
+      row.style.transition = 'opacity .3s';
+      setTimeout(() => row.remove(), 300);
+      showToast(newStatus === 'active' ? 'Restored' : 'Removed from leads');
+    });
+  }
+</script>
+</body>
+</html>

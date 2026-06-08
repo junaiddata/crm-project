@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incoming Calls — CRM</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%);
+      color: #fff;
+      padding: 0 28px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-logo { height: 38px; object-fit: contain; max-width: 130px; display: block; filter: brightness(0) invert(1); }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .header-sub   { font-size: 11.5px; color: #94b8d8; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-link {
+      color: rgba(255,255,255,0.8); text-decoration: none;
+      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .header-link.active { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ── Stats ── */
+    .stats-strip { display: flex; gap: 12px; padding: 20px 28px 0; }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px; flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+    }
+    .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
+    .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
+
+    /* ── Filters ── */
+    .filters-wrap {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 28px; flex-wrap: wrap;
+    }
+    .filter-select {
+      height: 38px; padding: 0 28px 0 10px; border: 1px solid #dde3ea;
+      border-radius: 8px; font-size: 12.5px; color: #334155; background: #fff;
+      font-family: inherit; cursor: pointer; outline: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center; background-size: 16px;
+    }
+    .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .filter-date {
+      height: 38px; padding: 0 10px; border: 1px solid #dde3ea;
+      border-radius: 8px; font-size: 12.5px; color: #334155; background: #fff;
+      font-family: inherit; outline: none;
+    }
+    .filter-date:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .filter-label { font-size: 12px; color: #64748b; white-space: nowrap; }
+    .filter-btn {
+      height: 38px; padding: 0 18px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+      border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-apply  { background: #1d4ed8; color: #fff; }
+    .btn-apply:hover { background: #1e40af; }
+    .btn-clear  { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+    .btn-clear:hover { background: #f1f5f9; }
+    .filter-count { margin-left: auto; font-size: 12px; color: #94a3b8; white-space: nowrap; }
+
+    /* ── Table ── */
+    .table-wrap { flex: 1; padding: 0 28px 32px; }
+    .table-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 11px 14px; text-align: left;
+      font-size: 11px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+      white-space: nowrap;
+    }
+    tbody tr { transition: background 0.1s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr:not(:last-child) td { border-bottom: 1px solid #f1f5f9; }
+    td {
+      padding: 11px 14px; font-size: 13px; color: #334155;
+      white-space: nowrap;
+    }
+    .td-number { font-weight: 600; color: #0f172a; font-family: monospace; font-size: 13.5px; }
+    .td-device { color: #475569; }
+    .td-duration { font-variant-numeric: tabular-nums; }
+    .td-time { color: #64748b; font-size: 12.5px; }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+    }
+    .badge-answered { background: #dcfce7; color: #166534; }
+    .badge-missed   { background: #fee2e2; color: #991b1b; }
+    .badge-rejected { background: #ffedd5; color: #9a3412; }
+    .badge-outgoing { background: #dbeafe; color: #1e40af; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* ── Empty ── */
+    .empty-row td { text-align: center; padding: 60px 20px; color: #94a3b8; font-size: 14px; }
+
+    footer {
+      padding: 14px 28px; text-align: center; font-size: 11.5px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    footer a { color: #3b82f6; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Logo" class="header-logo">
+    <div>
+      <div class="header-title">Incoming Calls</div>
+      <div class="header-sub">{{ shown_count }} call{{ shown_count|pluralize }} shown · {{ today_total }} today</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <a href="/crm/" class="header-link">Leads Dashboard</a>
+    <a href="/whatsapp/" class="header-link">WhatsApp</a>
+    <a href="/calls/" class="header-link active">Incoming Calls</a>
+    <a href="/" class="header-link">← Home</a>
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats-strip">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#eff6ff;color:#1d4ed8;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ today_total }}</div>
+      <div class="stat-lbl">Total calls today</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;color:#166534;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ today_answered }}</div>
+      <div class="stat-lbl">Answered today</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fee2e2;color:#991b1b;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ today_missed }}</div>
+      <div class="stat-lbl">Missed today</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="get">
+  <div class="filters-wrap">
+    <span class="filter-label">Status:</span>
+    <select name="status" class="filter-select">
+      <option value="" {% if not active_status %}selected{% endif %}>All statuses</option>
+      <option value="answered" {% if active_status == 'answered' %}selected{% endif %}>Answered</option>
+      <option value="missed"   {% if active_status == 'missed'   %}selected{% endif %}>Missed</option>
+      <option value="rejected" {% if active_status == 'rejected' %}selected{% endif %}>Rejected</option>
+    </select>
+
+    <span class="filter-label">Device:</span>
+    <select name="device" class="filter-select">
+      <option value="" {% if not active_device %}selected{% endif %}>All devices</option>
+      {% for device in all_devices %}
+      <option value="{{ device }}" {% if active_device == device %}selected{% endif %}>{{ device }}</option>
+      {% endfor %}
+    </select>
+
+    <span class="filter-label">From:</span>
+    <input type="date" name="from_date" class="filter-date" value="{{ from_date }}">
+
+    <span class="filter-label">To:</span>
+    <input type="date" name="to_date" class="filter-date" value="{{ to_date }}">
+
+    <button type="submit" class="filter-btn btn-apply">Apply</button>
+    <a href="/calls/" class="filter-btn btn-clear" style="text-decoration:none;">Clear</a>
+
+    <span class="filter-count">{{ shown_count }} result{{ shown_count|pluralize }}</span>
+  </div>
+</form>
+
+<!-- Table -->
+<div class="table-wrap">
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Number</th>
+          <th>Direction</th>
+          <th>Device</th>
+          <th>Status</th>
+          <th>Duration</th>
+          <th>Date &amp; Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if calls %}
+          {% for call in calls %}
+          <tr>
+            <td style="color:#94a3b8;font-size:11px;">{{ forloop.counter }}</td>
+            <td class="td-number">{{ call.caller_number }}</td>
+            <td>
+              {% if call.direction == 'outgoing' %}
+                <span class="badge badge-outgoing">
+                  <span class="badge-dot" style="background:#3b82f6;"></span>Outgoing
+                </span>
+              {% else %}
+                <span class="badge badge-answered" style="background:#f0f9ff;color:#0369a1;">
+                  <span class="badge-dot" style="background:#0ea5e9;"></span>Incoming
+                </span>
+              {% endif %}
+            </td>
+            <td class="td-device">{{ call.received_by }}</td>
+            <td>
+              {% if call.status == 'answered' %}
+                <span class="badge badge-answered">
+                  <span class="badge-dot" style="background:#22c55e;"></span>Answered
+                </span>
+              {% elif call.status == 'missed' %}
+                <span class="badge badge-missed">
+                  <span class="badge-dot" style="background:#ef4444;"></span>Missed
+                </span>
+              {% else %}
+                <span class="badge badge-rejected">
+                  <span class="badge-dot" style="background:#f97316;"></span>Rejected
+                </span>
+              {% endif %}
+            </td>
+            <td class="td-duration" data-seconds="{{ call.duration }}"></td>
+            <td class="td-time">{{ call.timestamp|date:"d M Y · H:i" }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr class="empty-row">
+            <td colspan="6">
+              <svg width="40" height="40" viewBox="0 0 20 20" fill="#cbd5e1" style="margin-bottom:10px;display:block;margin-inline:auto;">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+              </svg>
+              No call logs found{% if active_status or active_device or from_date or to_date %} for this filter{% endif %}
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<footer>
+  <a href="/">← Home</a> &nbsp;·&nbsp;
+  <a href="/crm/">Leads Dashboard</a> &nbsp;·&nbsp;
+  <a href="/whatsapp/">WhatsApp Manager</a> &nbsp;·&nbsp;
+  API: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:11px;">POST /api/calls/log/</code>
+</footer>
+
+<script>
+  /* Format duration Xm Ys — done server-side via template tag is awkward,
+     so patch it client-side after render */
+  document.querySelectorAll('.td-duration').forEach(td => {
+    const raw = td.dataset.seconds;
+    if (raw === undefined) return;
+    const s = parseInt(raw, 10);
+    if (!s) { td.textContent = '—'; return; }
+    const m = Math.floor(s / 60), sec = s % 60;
+    td.textContent = m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  });
+</script>
+</body>
+</html>

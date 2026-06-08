@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Lead Manager — Manage Your Sales Pipeline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: #0f172a;
+      background: #fff;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 40px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: #0f172a;
+    }
+    .nav-brand-icon {
+      width: 36px; height: 36px; background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .nav-brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-brand-tag { font-size: 10px; font-weight: 600; color: #3b82f6; background: #eff6ff; padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-link { font-size: 14px; color: #475569; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; }
+    .nav-link:hover { color: #1d4ed8; background: #eff6ff; }
+    .btn-nav-cta {
+      background: #1d4ed8; color: #fff;
+      padding: 9px 20px; border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, box-shadow 0.15s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn-nav-cta:hover { background: #1e40af; box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(160deg, #0c2340 0%, #1a3a5c 55%, #1e4d8c 100%);
+      padding: 96px 40px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 60% 0%, rgba(59,130,246,0.18) 0%, transparent 65%),
+                  radial-gradient(ellipse at 10% 100%, rgba(29,78,216,0.15) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35);
+      color: #93c5fd; font-size: 12.5px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 28px;
+      letter-spacing: 0.02em;
+    }
+    .hero-badge-dot { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 58px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      max-width: 760px;
+      margin: 0 auto 20px;
+    }
+    .hero h1 span { color: #60a5fa; }
+    .hero p {
+      font-size: 18px; color: #94b8d8; max-width: 520px;
+      margin: 0 auto 40px; line-height: 1.65;
+    }
+    .hero-cta-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .btn-hero-primary {
+      background: #3b82f6; color: #fff;
+      padding: 14px 28px; border-radius: 10px;
+      font-size: 15px; font-weight: 700;
+      text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
+      box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+    }
+    .btn-hero-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(59,130,246,0.5); }
+    .btn-hero-secondary {
+      color: #cbd5e1; border: 1px solid rgba(255,255,255,0.18);
+      padding: 14px 24px; border-radius: 10px;
+      font-size: 15px; font-weight: 600;
+      text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
+      background: rgba(255,255,255,0.06);
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ── Stats strip ── */
+    .stats-strip {
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 32px 40px;
+      display: flex; justify-content: center; gap: 0;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      text-align: center; padding: 0 48px;
+      border-right: 1px solid #e2e8f0;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-number { font-size: 32px; font-weight: 800; color: #1d4ed8; letter-spacing: -0.03em; }
+    .stat-label { font-size: 13px; color: #64748b; font-weight: 500; margin-top: 2px; }
+
+    /* ── Section ── */
+    section { padding: 80px 40px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-tag {
+      font-size: 12px; font-weight: 700; color: #3b82f6;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: clamp(26px, 3.5vw, 38px);
+      font-weight: 800; letter-spacing: -0.025em;
+      color: #0f172a; margin-bottom: 14px; line-height: 1.15;
+    }
+    .section-sub { font-size: 16px; color: #64748b; max-width: 540px; line-height: 1.6; }
+
+    /* ── Features grid ── */
+    .features-section { background: #fff; }
+    .features-header { margin-bottom: 52px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 28px 26px;
+      transition: all 0.2s;
+    }
+    .feature-card:hover {
+      border-color: #bfdbfe;
+      box-shadow: 0 8px 30px rgba(29,78,216,0.08);
+      transform: translateY(-2px);
+      background: #fff;
+    }
+    .feature-icon {
+      width: 44px; height: 44px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px; font-size: 20px;
+    }
+    .feature-card h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .feature-card p { font-size: 13.5px; color: #64748b; line-height: 1.6; }
+
+    /* ── How it works ── */
+    .how-section { background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      margin-top: 52px; position: relative;
+    }
+    .steps-grid::before {
+      content: ''; position: absolute;
+      top: 22px; left: 12.5%; right: 12.5%;
+      height: 2px; background: linear-gradient(90deg, #bfdbfe, #3b82f6, #bfdbfe);
+      z-index: 0;
+    }
+    .step { text-align: center; padding: 0 20px; position: relative; z-index: 1; }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: #1d4ed8; color: #fff;
+      font-size: 16px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; border: 3px solid #fff;
+      box-shadow: 0 0 0 2px #bfdbfe;
+    }
+    .step h4 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .step p { font-size: 13px; color: #64748b; line-height: 1.55; }
+
+    /* ── CTA banner ── */
+    .cta-section {
+      background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%);
+      padding: 80px 40px;
+      text-align: center;
+    }
+    .cta-section h2 { font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.025em; margin-bottom: 14px; }
+    .cta-section p { font-size: 16px; color: #94b8d8; margin-bottom: 36px; }
+
+    /* ── Footer ── */
+    footer {
+      background: #0f172a; padding: 32px 40px;
+      text-align: center; color: #475569; font-size: 13px;
+    }
+    footer a { color: #3b82f6; text-decoration: none; }
+
+    /* ── Arrow icon inline ── */
+    .arrow { display: inline-block; transition: transform 0.15s; }
+    .btn-hero-primary:hover .arrow,
+    .btn-nav-cta:hover .arrow { transform: translateX(3px); }
+
+    @media (max-width: 1100px) {
+      .features-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .steps-grid::before { display: none; }
+      nav { padding: 0 20px; }
+      .hero { padding: 72px 20px 60px; }
+      section { padding: 60px 20px; }
+      .stat-item { padding: 12px 24px; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .nav-brand-tag { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/" class="nav-brand">
+      <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+           alt="Company Logo"
+           style="height:42px; object-fit:contain; max-width:150px; display:block;">
+    </a>
+    <div class="nav-right">
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#how-it-works" class="nav-link">How it works</a>
+      <a href="/calls/" class="nav-link">Call Log</a>
+      <a href="/call-leads/" class="nav-link">Call Leads</a>
+      <a href="/whatsapp/" class="btn-nav-cta" style="background:#065f46; box-shadow:none;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        WhatsApp Manager
+      </a>
+      <a href="/crm/" class="btn-nav-cta">
+        Leads Dashboard
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Sales Pipeline · Fully Integrated
+    </div>
+    <h1>Track every lead,<br><span>close every deal.</span></h1>
+    <p>A streamlined CRM built for your sales team. Manage leads, track follow-ups, and monitor your pipeline — all in one place.</p>
+    <div class="hero-cta-row">
+      <a href="/crm/" class="btn-hero-primary">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+        </svg>
+        Open Leads Dashboard
+        <span class="arrow">→</span>
+      </a>
+      <a href="#features" class="btn-hero-secondary">
+        See features
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Stats strip -->
+  <div class="stats-strip">
+    <div class="stat-item">
+      <div class="stat-number">6</div>
+      <div class="stat-label">Pipeline statuses</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">2</div>
+      <div class="stat-label">Follow-up stages</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">∞</div>
+      <div class="stat-label">Leads tracked</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">4</div>
+      <div class="stat-label">Lead sources</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">CSV</div>
+      <div class="stat-label">One-click export</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <section class="features-section" id="features">
+    <div class="section-inner">
+      <div class="features-header">
+        <div class="section-tag">Features</div>
+        <h2 class="section-title">Everything your sales team needs</h2>
+        <p class="section-sub">From first enquiry to closed deal — manage the full lead lifecycle without switching tools.</p>
+      </div>
+      <div class="features-grid">
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3>Spreadsheet-style table</h3>
+          <p>Inline cell editing — click any field to edit directly. No forms, no page reloads. As fast as a spreadsheet, backed by a database.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#f0fdf4; color:#059669;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 4a1 1 0 011-1h3a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V4zm5 0a1 1 0 011-1h3a1 1 0 011 1v8a1 1 0 01-1 1H8a1 1 0 01-1-1V4zm6-1a1 1 0 00-1 1v6a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3z"/>
+            </svg>
+          </div>
+          <h3>Kanban pipeline board</h3>
+          <p>Visualise your entire pipeline by status. Switch between table and board view in one click. Drag status from dropdown on any card.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#fef9c3; color:#854d0e;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3>Follow-up tracking</h3>
+          <p>Log two rounds of follow-up per lead — date and notes. Never lose track of a pending conversation or promised callback.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#faf5ff; color:#7c3aed;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3>Quotation file upload</h3>
+          <p>Attach a PDF or document to any lead. Files are stored on the server and linked back to the lead — no more hunting through email.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#f0fdf4; color:#059669;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3>Live dashboard stats</h3>
+          <p>Instant overview of total leads, approved count, conversion rate, pending follow-ups, and monthly intake — updated in real time.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+            <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <h3>Search, filter &amp; export</h3>
+          <p>Full-text search across all fields. Filter by salesperson, platform, or status. Export any view to CSV with one click.</p>
+        </div>
+
+        <div class="feature-card" style="border-color:#bbf7d0; background:linear-gradient(135deg,#f0fdf4,#fff);">
+          <div class="feature-icon" style="background:#d1fae5; color:#065f46;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+            </svg>
+          </div>
+          <h3>WhatsApp inbox <span style="font-size:10px;font-weight:700;background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;vertical-align:middle;margin-left:4px;">NEW</span></h3>
+          <p>Incoming WhatsApp enquiries land automatically via the Meta Cloud API webhook. View, filter, and mark messages as replied from one inbox.</p>
+          <a href="/whatsapp/" style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12.5px;font-weight:600;color:#065f46;text-decoration:none;">Open WhatsApp Manager →</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-section" id="how-it-works">
+    <div class="section-inner">
+      <div class="section-tag">Workflow</div>
+      <h2 class="section-title">From enquiry to closed deal</h2>
+      <p class="section-sub">Four simple steps that keep every lead moving forward.</p>
+      <div class="steps-grid">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h4>Capture the lead</h4>
+          <p>Add a new lead in seconds — name, mobile, email, platform, and the items enquired about.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h4>Send a quotation</h4>
+          <p>Record the quoted amount and attach the quotation PDF directly to the lead record.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h4>Follow up</h4>
+          <p>Log your follow-up dates and notes. Two rounds of follow-up tracked per lead.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h4>Update the status</h4>
+          <p>Mark as Approved, Rejected, Will Buy in Future, Price too high, or Not required.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick access cards -->
+  <section style="padding:60px 40px; background:#fff; border-top:1px solid #e2e8f0;">
+    <div class="section-inner">
+      <div class="section-tag">Quick Access</div>
+      <h2 class="section-title" style="margin-bottom:32px;">Jump straight in</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; max-width:960px;">
+        <a href="/crm/" style="text-decoration:none; display:flex; align-items:center; gap:18px; padding:24px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='#1d4ed8';this.style.background='#eff6ff';"
+           onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc';">
+          <div style="width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 20 20" fill="white"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:3px;">Leads Dashboard</div>
+            <div style="font-size:12.5px;color:#64748b;">Table · Kanban · CSV export</div>
+          </div>
+        </a>
+        <a href="/whatsapp/" style="text-decoration:none; display:flex; align-items:center; gap:18px; padding:24px; background:#f0fdf4; border:2px solid #bbf7d0; border-radius:14px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='#065f46';this.style.background='#dcfce7';"
+           onmouseout="this.style.borderColor='#bbf7d0';this.style.background='#f0fdf4';">
+          <div style="width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,#064e3b,#10b981);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#064e3b;margin-bottom:3px;">WhatsApp Manager</div>
+            <div style="font-size:12.5px;color:#059669;">Inbox · Filter · Mark replied</div>
+          </div>
+        </a>
+
+        <a href="/call-leads/" style="text-decoration:none; display:flex; align-items:center; gap:18px; padding:24px; background:#fff7ed; border:2px solid #fed7aa; border-radius:14px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='#c2410c';this.style.background='#ffedd5';"
+           onmouseout="this.style.borderColor='#fed7aa';this.style.background='#fff7ed';">
+          <div style="width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,#c2410c,#f97316);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M6.6,10.8c1.4,2.8 3.8,5.1 6.6,6.6l2.2,-2.2c0.3,-0.3 0.7,-0.4 1,-0.2 1.1,0.4 2.3,0.6 3.6,0.6 0.6,0 1,0.4 1,1V20c0,0.6 -0.4,1 -1,1C10.4,21 3,13.6 3,4.5 3,3.9 3.5,3.5 4.1,3.5H7.6c0.6,0 1,0.4 1,1 0,1.3 0.2,2.5 0.6,3.6 0.1,0.3 0,0.7 -0.2,1L6.6,10.8z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#9a3412;margin-bottom:3px;">Call Leads</div>
+            <div style="font-size:12.5px;color:#c2410c;">Missed · Follow-up · Quotations</div>
+          </div>
+        </a>
+
+        <a href="/calls/" style="text-decoration:none; display:flex; align-items:center; gap:18px; padding:24px; background:#f5f3ff; border:2px solid #ddd6fe; border-radius:14px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='#7c3aed';this.style.background='#ede9fe';"
+           onmouseout="this.style.borderColor='#ddd6fe';this.style.background='#f5f3ff';">
+          <div style="width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,#5b21b6,#8b5cf6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M3 3h18v2H3zm0 4h12v2H3zm0 4h18v2H3zm0 4h12v2H3zm0 4h18v2H3z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#4c1d95;margin-bottom:3px;">Call Log</div>
+            <div style="font-size:12.5px;color:#7c3aed;">All calls · Incoming · Outgoing</div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="cta-section">
+    <h2>Ready to manage your pipeline?</h2>
+    <p>Your leads are waiting — open the dashboard and get started.</p>
+    <a href="/crm/" class="btn-hero-primary" style="font-size:16px; padding:15px 32px; display:inline-flex;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+      </svg>
+      Open Leads Dashboard
+      <span class="arrow">→</span>
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>CRM Lead Manager &nbsp;·&nbsp; Built with Django &amp; React &nbsp;·&nbsp; <a href="/admin/">Admin</a></p>
+  </footer>
+
+</body>
+</html>
