@@ -38,18 +38,37 @@ def whatsapp_webhook(request):
                     continue
                 value = change.get('value', {})
                 for msg in value.get('messages', []):
-                    # Skip non-text and status updates
-                    if msg.get('type') != 'text':
-                        continue
+                    msg_type   = msg.get('type', '')
                     message_id = msg.get('id', '')
                     sender     = msg.get('from', '')
-                    text_body  = msg.get('text', {}).get('body', '')
                     if not message_id or not sender:
                         continue
-                    WhatsAppLead.objects.get_or_create(
-                        message_id=message_id,
-                        defaults={'sender': sender, 'text_body': text_body},
-                    )
+
+                    if msg_type == 'text':
+                        text_body = msg.get('text', {}).get('body', '')
+                        WhatsAppLead.objects.get_or_create(
+                            message_id=message_id,
+                            defaults={'sender': sender, 'text_body': text_body, 'msg_type': 'text'},
+                        )
+
+                    elif msg_type in ('image', 'video', 'audio', 'document', 'sticker'):
+                        stored_type = 'image' if msg_type == 'sticker' else msg_type
+                        media_data  = msg.get(msg_type, {})
+                        media_id    = media_data.get('id', '')
+                        caption     = media_data.get('caption', '')
+
+                        lead, created = WhatsAppLead.objects.get_or_create(
+                            message_id=message_id,
+                            defaults={'sender': sender, 'text_body': caption, 'msg_type': stored_type},
+                        )
+
+                        if created and media_id:
+                            from .utils import download_whatsapp_media
+                            from django.core.files.base import ContentFile
+                            file_bytes, mime_type, filename = download_whatsapp_media(media_id)
+                            if file_bytes:
+                                lead.media_name = filename
+                                lead.media_file.save(filename, ContentFile(file_bytes), save=True)
     except Exception:
         logger.exception('Error processing WhatsApp webhook payload')
 
@@ -270,8 +289,14 @@ def whatsapp_chat(request, sender):
 
     timeline = []
     for msg in incoming:
-        timeline.append({'dir': 'in', 'text': msg.text_body, 'time': msg.received_at})
-        # Surface old replies stored on the lead record (before WhatsAppOutbound existed)
+        timeline.append({
+            'dir':        'in',
+            'text':       msg.text_body,
+            'time':       msg.received_at,
+            'msg_type':   msg.msg_type,
+            'media_url':  msg.media_file.url if msg.media_file else '',
+            'media_name': msg.media_name,
+        })
         if msg.reply_text:
             timeline.append({'dir': 'out', 'text': msg.reply_text,
                               'time': msg.received_at + timedelta(seconds=1), 'legacy': True})

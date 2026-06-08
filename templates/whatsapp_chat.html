@@ -102,6 +102,12 @@
     .doc-icon.aud-icon  { background: #d69e2e; }
     .doc-name { font-size: 12.5px; font-weight: 600; word-break: break-all; }
     .doc-sub  { font-size: 11px; color: #666; margin-top: 1px; }
+    .media-expired {
+      font-size: 12.5px; color: #94a3b8; font-style: italic;
+      padding: 10px 12px; background: rgba(0,0,0,0.04);
+      border-radius: 6px; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
     .bubble-caption { font-size: 13px; margin-top: 4px; }
     .bubble-meta {
       display: flex; align-items: center; justify-content: flex-end;
@@ -237,33 +243,55 @@
       <div class="bubble bubble-{{ item.dir }}">
 
         {% if item.msg_type == 'image' %}
-          <img src="{{ item.media_url }}" alt="{{ item.media_name }}" onclick="openLightbox(this.src)">
+          {% if item.media_url %}
+            <img src="{{ item.media_url }}" alt="{{ item.media_name }}" onclick="openLightbox(this.src)">
+          {% else %}
+            <div class="media-expired">📷 Photo no longer available</div>
+          {% endif %}
           {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
 
         {% elif item.msg_type == 'video' %}
-          <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
-            <div class="doc-icon vid-icon">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>
-            </div>
-            <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Video · tap to download</div></div>
-          </a>
+          {% if item.media_url %}
+            <video controls style="display:block;max-width:260px;max-height:200px;border-radius:6px;margin-bottom:4px;">
+              <source src="{{ item.media_url }}">
+              <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
+                <div class="doc-icon vid-icon">
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>
+                </div>
+                <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Video · tap to download</div></div>
+              </a>
+            </video>
+          {% else %}
+            <div class="media-expired">🎥 Video no longer available</div>
+          {% endif %}
           {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
 
         {% elif item.msg_type == 'audio' %}
-          <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
-            <div class="doc-icon aud-icon">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"/></svg>
-            </div>
-            <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Audio · tap to download</div></div>
-          </a>
+          {% if item.media_url %}
+            <audio controls style="display:block;width:220px;margin-bottom:4px;">
+              <source src="{{ item.media_url }}">
+            </audio>
+            <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}" style="margin-top:0;">
+              <div class="doc-icon aud-icon">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"/></svg>
+              </div>
+              <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Download audio</div></div>
+            </a>
+          {% else %}
+            <div class="media-expired">🎵 Voice message no longer available</div>
+          {% endif %}
 
         {% elif item.msg_type == 'document' %}
-          <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
-            <div class="doc-icon">
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
-            </div>
-            <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Document · tap to download</div></div>
-          </a>
+          {% if item.media_url %}
+            <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
+              <div class="doc-icon">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+              </div>
+              <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Document · tap to download</div></div>
+            </a>
+          {% else %}
+            <div class="media-expired">📄 {% if item.media_name %}{{ item.media_name }}{% else %}Document{% endif %} no longer available</div>
+          {% endif %}
           {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
 
         {% else %}
@@ -489,10 +517,10 @@
       inner = `<img src="${mediaUrl}" alt="${safeName}" onclick="openLightbox(this.src)">`;
       if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
     } else if (mediaType === 'video') {
-      inner = `<a class="doc-bubble" href="${mediaUrl}" download="${safeName}">
-        <div class="doc-icon vid-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg></div>
-        <div><div class="doc-name">${safeName}</div><div class="doc-sub">Video · tap to download</div></div>
-      </a>`;
+      inner = `<video controls style="display:block;max-width:260px;max-height:200px;border-radius:6px;margin-bottom:4px;"><source src="${mediaUrl}"></video>`;
+      if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
+    } else if (mediaType === 'audio') {
+      inner = `<audio controls style="display:block;width:220px;margin-bottom:4px;"><source src="${mediaUrl}"></audio>`;
       if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
     } else {
       inner = `<a class="doc-bubble" href="${mediaUrl}" download="${safeName}">

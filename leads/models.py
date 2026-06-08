@@ -2,9 +2,20 @@ from django.db import models
 
 
 class WhatsAppLead(models.Model):
+    MSG_TYPES = [
+        ('text',     'Text'),
+        ('image',    'Image'),
+        ('document', 'Document'),
+        ('video',    'Video'),
+        ('audio',    'Audio'),
+    ]
+
     sender      = models.CharField(max_length=30)
     message_id  = models.CharField(max_length=255, unique=True)
-    text_body   = models.TextField()
+    text_body   = models.TextField(blank=True)
+    msg_type    = models.CharField(max_length=20, default='text', choices=MSG_TYPES)
+    media_file  = models.FileField(upload_to='whatsapp_inbound/', blank=True, null=True)
+    media_name  = models.CharField(max_length=255, blank=True)
     received_at = models.DateTimeField(auto_now_add=True)
     replied     = models.BooleanField(default=False)
     reply_text  = models.TextField(blank=True)
@@ -13,6 +24,8 @@ class WhatsAppLead(models.Model):
         ordering = ['-received_at']
 
     def __str__(self):
+        if self.msg_type != 'text':
+            return f'{self.sender} — [{self.msg_type}] {self.media_name or ""}'
         return f'{self.sender} — {self.text_body[:60]}'
 
 

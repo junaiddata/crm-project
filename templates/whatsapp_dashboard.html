@@ -416,8 +416,22 @@
     <div class="card-messages">
       {% for msg in group.messages %}
       <div class="msg-bubble-wrap">
-        <div class="msg-bubble">{{ msg.text_body }}</div>
-        <div class="msg-tooltip">{{ msg.text_body }}</div>
+        {% if msg.msg_type == 'image' %}
+          <div class="msg-bubble">📷 {% if msg.text_body %}{{ msg.text_body }}{% else %}Photo{% endif %}</div>
+          <div class="msg-tooltip">📷 {% if msg.text_body %}{{ msg.text_body }}{% else %}Photo{% endif %}</div>
+        {% elif msg.msg_type == 'video' %}
+          <div class="msg-bubble">🎥 {% if msg.text_body %}{{ msg.text_body }}{% else %}Video{% endif %}</div>
+          <div class="msg-tooltip">🎥 {% if msg.text_body %}{{ msg.text_body }}{% else %}Video{% endif %}</div>
+        {% elif msg.msg_type == 'audio' %}
+          <div class="msg-bubble">🎵 Voice message</div>
+          <div class="msg-tooltip">🎵 Voice message</div>
+        {% elif msg.msg_type == 'document' %}
+          <div class="msg-bubble">📄 {% if msg.media_name %}{{ msg.media_name }}{% else %}Document{% endif %}</div>
+          <div class="msg-tooltip">📄 {% if msg.media_name %}{{ msg.media_name }}{% else %}Document{% endif %}</div>
+        {% else %}
+          <div class="msg-bubble">{{ msg.text_body }}</div>
+          <div class="msg-tooltip">{{ msg.text_body }}</div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
