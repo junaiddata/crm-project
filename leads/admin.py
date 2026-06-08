@@ -13,8 +13,8 @@ class LeadAdmin(admin.ModelAdmin):
 
 @admin.register(WhatsAppLead)
 class WhatsAppLeadAdmin(admin.ModelAdmin):
-    list_display = ['sender', 'msg_type', 'text_body', 'media_name', 'received_at', 'replied']
+    list_display = ['sender', 'sender_name', 'msg_type', 'text_body', 'media_name', 'received_at', 'replied']
     list_filter = ['replied', 'msg_type']
-    search_fields = ['sender', 'text_body', 'message_id', 'media_name']
-    readonly_fields = ['sender', 'message_id', 'text_body', 'msg_type', 'media_file', 'media_name', 'received_at']
+    search_fields = ['sender', 'sender_name', 'text_body', 'message_id', 'media_name']
+    readonly_fields = ['sender', 'sender_name', 'message_id', 'text_body', 'msg_type', 'media_file', 'media_name', 'received_at']
     ordering = ['-received_at']

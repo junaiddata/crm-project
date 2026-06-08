@@ -307,12 +307,10 @@
     </div>
   </div>
   <div class="header-right">
-    <a href="/crm/" class="header-link">
-      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:4px;"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
-      Leads Dashboard
+    <a href="/" class="header-link" style="background:rgba(255,255,255,0.22);">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:5px;"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      Home
     </a>
-    <a href="/calls/" class="header-link">Incoming Calls</a>
-    <a href="/" class="header-link">← Home</a>
   </div>
 </header>
 
@@ -385,6 +383,7 @@
     window._waLeadData = window._waLeadData || {};
     window._waLeadData[{{ gid }}] = {
       sender: '{{ group.sender|escapejs }}',
+      name: '{{ group.sender_name|escapejs }}',
       date: '{{ group.first_time|date:"Y-m-d" }}',
       query: '{% for msg in group.messages %}{% if msg.text_body %}{{ msg.text_body|escapejs }}{% endif %}{% if msg.media_file %}{% if msg.text_body %}\n{% endif %}{{ msg.get_msg_type_display|escapejs }}: {{ request.scheme|escapejs }}://{{ request.get_host|escapejs }}{{ msg.media_file.url|escapejs }}{% endif %}{% if not forloop.last %}\n{% endif %}{% endfor %}'
     };
@@ -397,6 +396,15 @@
       <div class="sender-row">
         <div class="avatar">{{ group.sender|slice:"-2:" }}</div>
         <div class="sender-info">
+          {% if group.sender_name %}
+          <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">{{ group.sender_name }}</a>
+          <div class="sender-meta">
+            +{{ group.sender }} · {{ group.first_time|date:"d M Y · H:i" }}
+            {% if group.messages|length > 1 %}
+              <span class="msg-count-chip">{{ group.messages|length }} messages</span>
+            {% endif %}
+          </div>
+          {% else %}
           <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">+{{ group.sender }}</a>
           <div class="sender-meta">
             {{ group.first_time|date:"d M Y · H:i" }}
@@ -404,6 +412,7 @@
               <span class="msg-count-chip">{{ group.messages|length }} messages</span>
             {% endif %}
           </div>
+          {% endif %}
         </div>
       </div>
       <span class="status-badge {% if group.all_replied %}badge-replied{% else %}badge-new{% endif %}" id="badge-{{ gid }}">
@@ -604,6 +613,7 @@
         body: JSON.stringify({
           date: d.date,
           mobileNo: d.sender,
+          name: d.name || '',
           platform: 'Whatsapp',
           items: d.query,
           dedupeBySender: true,

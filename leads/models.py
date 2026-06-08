@@ -11,6 +11,7 @@ class WhatsAppLead(models.Model):
     ]
 
     sender      = models.CharField(max_length=30)
+    sender_name = models.CharField(max_length=255, blank=True)
     message_id  = models.CharField(max_length=255, unique=True)
     text_body   = models.TextField(blank=True)
     msg_type    = models.CharField(max_length=20, default='text', choices=MSG_TYPES)

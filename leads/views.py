@@ -37,18 +37,25 @@ def whatsapp_webhook(request):
                 if change.get('field') != 'messages':
                     continue
                 value = change.get('value', {})
+                # Map wa_id → profile name from the contacts block
+                contact_names = {
+                    c.get('wa_id', ''): c.get('profile', {}).get('name', '')
+                    for c in value.get('contacts', [])
+                }
                 for msg in value.get('messages', []):
                     msg_type   = msg.get('type', '')
                     message_id = msg.get('id', '')
                     sender     = msg.get('from', '')
                     if not message_id or not sender:
                         continue
+                    sender_name = contact_names.get(sender, '')
 
                     if msg_type == 'text':
                         text_body = msg.get('text', {}).get('body', '')
                         WhatsAppLead.objects.get_or_create(
                             message_id=message_id,
-                            defaults={'sender': sender, 'text_body': text_body, 'msg_type': 'text'},
+                            defaults={'sender': sender, 'sender_name': sender_name,
+                                      'text_body': text_body, 'msg_type': 'text'},
                         )
 
                     elif msg_type in ('image', 'video', 'audio', 'document', 'sticker'):
@@ -59,7 +66,8 @@ def whatsapp_webhook(request):
 
                         lead, created = WhatsAppLead.objects.get_or_create(
                             message_id=message_id,
-                            defaults={'sender': sender, 'text_body': caption, 'msg_type': stored_type},
+                            defaults={'sender': sender, 'sender_name': sender_name,
+                                      'text_body': caption, 'msg_type': stored_type},
                         )
 
                         if created and media_id:
@@ -239,6 +247,8 @@ def _group_whatsapp_messages(qs, gap_seconds=60):
         # use last (most recent) message pk for the reply endpoint
         g['reply_pk'] = g['messages'][-1].id
         g['reply_text'] = g['messages'][-1].reply_text
+        # first available WhatsApp profile name for this sender
+        g['sender_name'] = next((m.sender_name for m in g['messages'] if m.sender_name), '')
 
     groups.reverse()  # newest group first
     return groups
@@ -326,8 +336,11 @@ def whatsapp_chat(request, sender):
 
     timeline.sort(key=lambda x: x['time'])
 
+    sender_name = next((m.sender_name for m in incoming if m.sender_name), '')
+
     return render(request, 'whatsapp_chat.html', {
         'sender': sender,
+        'sender_name': sender_name,
         'timeline': timeline,
         'message_count': len(incoming),
     })
