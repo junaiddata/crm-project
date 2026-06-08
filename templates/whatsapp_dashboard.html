@@ -386,7 +386,7 @@
     window._waLeadData[{{ gid }}] = {
       sender: '{{ group.sender|escapejs }}',
       date: '{{ group.first_time|date:"Y-m-d" }}',
-      query: '{% for msg in group.messages %}{{ msg.text_body|escapejs }}{% if not forloop.last %}\n{% endif %}{% endfor %}'
+      query: '{% for msg in group.messages %}{% if msg.text_body %}{{ msg.text_body|escapejs }}{% endif %}{% if msg.media_file %}{% if msg.text_body %}\n{% endif %}{{ msg.get_msg_type_display|escapejs }}: {{ request.scheme|escapejs }}://{{ request.get_host|escapejs }}{{ msg.media_file.url|escapejs }}{% endif %}{% if not forloop.last %}\n{% endif %}{% endfor %}'
     };
   </script>
 
