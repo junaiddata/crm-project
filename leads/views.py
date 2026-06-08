@@ -126,6 +126,19 @@ class LeadListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+        # When adding from the WhatsApp dashboard, avoid creating a duplicate
+        # lead if one already exists for the same sender number.
+        if request.data.get('dedupeBySender'):
+            mobile = (request.data.get('mobileNo') or '').strip()
+            if mobile:
+                existing = Lead.objects.filter(mobile_no=mobile).first()
+                if existing:
+                    serializer = LeadSerializer(existing, context={'request': request})
+                    return Response(
+                        {'duplicate': True, **serializer.data},
+                        status=status.HTTP_200_OK,
+                    )
+
         serializer = LeadSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()

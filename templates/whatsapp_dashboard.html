@@ -606,10 +606,21 @@
           mobileNo: d.sender,
           platform: 'Whatsapp',
           items: d.query,
+          dedupeBySender: true,
         }),
       });
       if (res.ok) {
-        showToast('Lead created for +' + d.sender, '#1d4ed8');
+        const data = await res.json().catch(() => ({}));
+        if (data.duplicate) {
+          showToast('Already in Leads — +' + d.sender, '#d97706');
+        } else {
+          showToast('Lead created for +' + d.sender, '#1d4ed8');
+        }
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Added';
+          return;
+        }
       } else {
         const err = await res.json().catch(() => ({}));
         showToast(err.detail || err.date || 'Failed to create lead', '#dc2626');
