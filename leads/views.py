@@ -149,7 +149,9 @@ class LeadListCreateView(APIView):
 
         serializer = LeadSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            # Mark WhatsApp-originated leads so their number/date stay locked.
+            source = 'whatsapp' if request.data.get('dedupeBySender') else ''
+            serializer.save(source=source)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -165,7 +167,11 @@ class LeadDetailView(APIView):
 
     def patch(self, request, pk):
         lead = self.get_object(pk)
-        serializer = LeadSerializer(lead, data=request.data, partial=True, context={'request': request})
+        data = request.data
+        # Number and date are locked for WhatsApp-sourced leads.
+        if lead.source == 'whatsapp':
+            data = {k: v for k, v in data.items() if k not in ('date', 'mobileNo')}
+        serializer = LeadSerializer(lead, data=data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

@@ -132,8 +132,14 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
   const [editVal2, setEditVal2] = React.useState('');
   const [hoveredRow, setHoveredRow] = React.useState(null);
 
+  // Number and date can't be edited on leads pulled in from WhatsApp.
+  function isLocked(lead, col) {
+    return lead.source === 'whatsapp' && (col.key === 'mobileNo' || col.key === 'date');
+  }
+
   function startEdit(rowId, col, lead) {
     if (col.type === 'file') return; // handled by FileCell itself
+    if (isLocked(lead, col)) return;
     if (col.type === 'followup') {
       setEditCell({ rowId, field: col.key });
       setEditVal(lead[col.dateKey] || '');
@@ -298,14 +304,23 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
               onMouseEnter={() => setHoveredRow(lead.id)}
               onMouseLeave={() => setHoveredRow(null)}>
               <td className="crm-td crm-td-num">{idx + 1}</td>
-              {TABLE_COLUMNS.map(col => (
+              {TABLE_COLUMNS.map(col => {
+                const locked = isLocked(lead, col);
+                return (
                 <td key={col.key}
-                  className={`crm-td ${isEditing(lead.id, col.key) ? 'crm-td-editing' : ''} ${col.type === 'file' ? 'crm-td-file' : ''}`}
+                  className={`crm-td ${isEditing(lead.id, col.key) ? 'crm-td-editing' : ''} ${col.type === 'file' ? 'crm-td-file' : ''} ${locked ? 'crm-td-locked' : ''}`}
                   style={{ width: col.w, minWidth: col.w }}
+                  title={locked ? 'Locked — added from WhatsApp' : undefined}
                   onClick={() => { if (!isEditing(lead.id, col.key)) startEdit(lead.id, col, lead); }}>
-                  {renderCell(lead, col)}
+                  {locked
+                    ? <span className="crm-cell-text crm-cell-locked" title={lead[col.key] || ''}>
+                        <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" style={{flexShrink:0,opacity:0.55}}><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/></svg>
+                        {col.type === 'date' ? (formatDateDisplay(lead[col.key]) || '—') : (lead[col.key] || '—')}
+                      </span>
+                    : renderCell(lead, col)}
                 </td>
-              ))}
+                );
+              })}
               <td className="crm-td crm-td-actions">
                 {hoveredRow === lead.id && (
                   <button className="crm-del-btn" title="Delete lead"

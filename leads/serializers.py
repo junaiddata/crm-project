@@ -15,6 +15,7 @@ class LeadSerializer(serializers.ModelSerializer):
     followUp2Notes  = serializers.CharField(source='follow_up2_notes', allow_blank=True, required=False)
     leadStatus      = serializers.CharField(source='lead_status', allow_blank=True, required=False)
     quotationFile   = serializers.SerializerMethodField()
+    source          = serializers.CharField(read_only=True)
 
     class Meta:
         model = Lead
@@ -22,7 +23,7 @@ class LeadSerializer(serializers.ModelSerializer):
             'id', 'date', 'mobileNo', 'emailId', 'name', 'platform', 'items',
             'salesPerson', 'quotation', 'quotationFile', 'quotationDate',
             'followUp1Date', 'followUp1Notes', 'followUp2Date', 'followUp2Notes',
-            'leadStatus',
+            'leadStatus', 'source',
         ]
 
     def get_quotationFile(self, obj):
