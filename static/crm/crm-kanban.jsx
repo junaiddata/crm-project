@@ -40,7 +40,7 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
                   <div className="crm-kc-top">
                     <span className="crm-kc-name">{lead.name || '(Unnamed)'}</span>
                   </div>
-                  {lead.items && <div className="crm-kc-items">{lead.items}</div>}
+                  {lead.items && <div className="crm-kc-items"><ItemsCell text={lead.items} /></div>}
                   <div className="crm-kc-meta">
                     {lead.salesPerson && (
                       <span className="crm-kc-chip crm-kc-chip-sales">

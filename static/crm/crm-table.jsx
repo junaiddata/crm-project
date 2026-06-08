@@ -73,6 +73,58 @@ function FileCell({ lead, onUpdateLead }) {
   );
 }
 
+// ── Items Cell: shows image links as hover-preview thumbnails ────────────────
+function ItemsCell({ text }) {
+  const [preview, setPreview] = React.useState(null);
+  const URL_RE = /https?:\/\/\S+/g;
+  if (!URL_RE.test(text)) {
+    return <span className="crm-cell-text" title={text}>{text}</span>;
+  }
+  URL_RE.lastIndex = 0;
+  const isImg = u => /\.(?:jpg|jpeg|png|webp|gif)(?:\?|$)/i.test(u);
+
+  const parts = [];
+  let last = 0, m;
+  while ((m = URL_RE.exec(text)) !== null) {
+    if (m.index > last) parts.push({ t: 'text', v: text.slice(last, m.index) });
+    parts.push({ t: isImg(m[0]) ? 'img' : 'url', v: m[0] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ t: 'text', v: text.slice(last) });
+
+  const movePreview = (url, e) => setPreview({
+    url,
+    x: Math.min(e.clientX + 16, window.innerWidth  - 290),
+    y: Math.min(e.clientY + 16, window.innerHeight - 290),
+  });
+
+  return (
+    <span className="crm-cell-text" title={text}>
+      {parts.map((p, i) => {
+        if (p.t === 'text') return <span key={i}>{p.v}</span>;
+        if (p.t === 'img') return (
+          <a key={i} href={p.v} target="_blank" rel="noopener noreferrer" className="crm-img-link"
+             onClick={e => e.stopPropagation()}
+             onMouseEnter={e => movePreview(p.v, e)}
+             onMouseMove={e => movePreview(p.v, e)}
+             onMouseLeave={() => setPreview(null)}>
+            <img className="crm-img-thumb" src={p.v} alt="" loading="lazy" />
+          </a>
+        );
+        return (
+          <a key={i} href={p.v} target="_blank" rel="noopener noreferrer"
+             className="crm-url-link" onClick={e => e.stopPropagation()}>🔗 Link</a>
+        );
+      })}
+      {preview && (
+        <div className="crm-img-preview" style={{ left: preview.x, top: preview.y }}>
+          <img src={preview.url} alt="" />
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ── Main Table ───────────────────────────────────────────────────────────────
 function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
   const [editCell, setEditCell] = React.useState(null);
@@ -220,6 +272,7 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
     }
     const val = lead[col.key];
     if (!val) return <span className="crm-cell-empty">—</span>;
+    if (col.key === 'items') return <ItemsCell text={val} />;
     return <span className="crm-cell-text" title={val}>{val}</span>;
   }
 
@@ -272,4 +325,4 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
   );
 }
 
-Object.assign(window, { CrmTable, TABLE_COLUMNS, FileCell });
+Object.assign(window, { CrmTable, TABLE_COLUMNS, FileCell, ItemsCell });

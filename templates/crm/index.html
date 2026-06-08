@@ -205,6 +205,22 @@
     .crm-cell-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .crm-cell-empty { color: #cbd5e1; }
 
+    /* Items cell image hover-preview */
+    .crm-img-link { display: inline-flex; align-items: center; vertical-align: middle; margin: 0 3px; }
+    .crm-img-thumb {
+      height: 22px; width: 22px; object-fit: cover;
+      border-radius: 4px; border: 1px solid #cbd5e1; cursor: zoom-in;
+    }
+    .crm-url-link { color: #2563eb; text-decoration: none; margin: 0 3px; white-space: nowrap; }
+    .crm-url-link:hover { text-decoration: underline; }
+    .crm-img-preview {
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: #fff; padding: 4px;
+      border: 1px solid #cbd5e1; border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .crm-img-preview img { display: block; max-width: 260px; max-height: 260px; border-radius: 5px; }
+
     .crm-cell-input {
       width: 100%; padding: 5px 8px; border: 1.5px solid #3b82f6;
       border-radius: 5px; font-size: 12.5px; font-family: inherit;
