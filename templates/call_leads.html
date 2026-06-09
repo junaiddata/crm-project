@@ -241,6 +241,7 @@
         <th>Duration</th>
         <th>Date &amp; Time</th>
         <th>Device</th>
+        <th>SIM</th>
         <th style="min-width:160px;">Query</th>
         <th style="min-width:140px;">Quotation</th>
         <th style="min-width:160px;">Follow Up</th>
@@ -278,6 +279,9 @@
 
           <!-- Device -->
           <td style="color:#64748b;font-size:12px;">{{ lead.received_by }}</td>
+
+          <!-- SIM -->
+          <td style="color:#64748b;font-size:12px;">{{ lead.sim|default:"—" }}</td>
 
           <!-- Query -->
           <td>
@@ -368,7 +372,7 @@
         {% endfor %}
       {% else %}
         <tr>
-          <td colspan="11">
+          <td colspan="12">
             <div class="empty">
               <div class="empty-icon">📞</div>
               <div>No call leads found</div>

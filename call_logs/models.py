@@ -15,6 +15,7 @@ class CallLog(models.Model):
 
     caller_number = models.CharField(max_length=50)
     received_by   = models.CharField(max_length=100)
+    sim           = models.CharField(max_length=100, blank=True, default='')   # which SIM handled the call (per-SIM label)
     direction     = models.CharField(max_length=10, choices=DIRECTION_CHOICES, default='incoming')
     status        = models.CharField(max_length=20, choices=STATUS_CHOICES)
     duration      = models.IntegerField(default=0)
@@ -40,6 +41,7 @@ class CallLead(models.Model):
     duration      = models.IntegerField(default=0)
     call_time     = models.DateTimeField()
     received_by   = models.CharField(max_length=100, blank=True)
+    sim           = models.CharField(max_length=100, blank=True, default='')
 
     # Lead fields (editable by staff)
     query              = models.TextField(blank=True)

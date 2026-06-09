@@ -36,6 +36,7 @@ class LogCallView(APIView):
                         duration=log.duration,
                         call_time=log.timestamp,
                         received_by=log.received_by,
+                        sim=log.sim,
                     )
                 )
 
@@ -73,11 +74,13 @@ class CallLogListView(APIView):
 
         status_f  = request.GET.get('status', '').strip()
         device_f  = request.GET.get('received_by', '').strip()
+        sim_f     = request.GET.get('sim', '').strip()
         from_date = request.GET.get('from_date', '').strip()
         to_date   = request.GET.get('to_date', '').strip()
 
         if status_f:   qs = qs.filter(status=status_f)
         if device_f:   qs = qs.filter(received_by=device_f)
+        if sim_f:      qs = qs.filter(sim=sim_f)
         if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
         if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
@@ -98,15 +101,19 @@ def calls_dashboard(request):
 
     status_f  = request.GET.get('status', '').strip()
     device_f  = request.GET.get('device', '').strip()
+    sim_f     = request.GET.get('sim', '').strip()
     from_date = request.GET.get('from_date', '').strip()
     to_date   = request.GET.get('to_date', '').strip()
 
     if status_f:   qs = qs.filter(status=status_f)
     if device_f:   qs = qs.filter(received_by=device_f)
+    if sim_f:      qs = qs.filter(sim=sim_f)
     if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
     if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
     all_devices = CallLog.objects.values_list('received_by', flat=True).distinct().order_by('received_by')
+    all_sims    = (CallLog.objects.exclude(sim='')
+                   .values_list('sim', flat=True).distinct().order_by('sim'))
 
     return render(request, 'calls_dashboard.html', {
         'calls':          qs,
@@ -115,8 +122,10 @@ def calls_dashboard(request):
         'today_answered': today_answered,
         'today_missed':   today_missed,
         'all_devices':    all_devices,
+        'all_sims':       all_sims,
         'active_status':  status_f,
         'active_device':  device_f,
+        'active_sim':     sim_f,
         'from_date':      from_date,
         'to_date':        to_date,
     })

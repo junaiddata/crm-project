@@ -4,9 +4,9 @@ from .models import CallLog, CallLead
 
 @admin.register(CallLog)
 class CallLogAdmin(admin.ModelAdmin):
-    list_display    = ('caller_number', 'received_by', 'direction', 'status', 'duration', 'timestamp')
-    list_filter     = ('status', 'direction', 'received_by', 'timestamp')
-    search_fields   = ('caller_number', 'received_by')
+    list_display    = ('caller_number', 'received_by', 'sim', 'direction', 'status', 'duration', 'timestamp')
+    list_filter     = ('status', 'direction', 'received_by', 'sim', 'timestamp')
+    search_fields   = ('caller_number', 'received_by', 'sim')
     readonly_fields = ('timestamp',)
     ordering        = ('-timestamp',)
 

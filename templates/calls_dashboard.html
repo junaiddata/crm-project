@@ -205,6 +205,14 @@
       {% endfor %}
     </select>
 
+    <span class="filter-label">SIM:</span>
+    <select name="sim" class="filter-select">
+      <option value="" {% if not active_sim %}selected{% endif %}>All SIMs</option>
+      {% for sim in all_sims %}
+      <option value="{{ sim }}" {% if active_sim == sim %}selected{% endif %}>{{ sim }}</option>
+      {% endfor %}
+    </select>
+
     <span class="filter-label">From:</span>
     <input type="date" name="from_date" class="filter-date" value="{{ from_date }}">
 
@@ -228,6 +236,7 @@
           <th>Number</th>
           <th>Direction</th>
           <th>Device</th>
+          <th>SIM</th>
           <th>Status</th>
           <th>Duration</th>
           <th>Date &amp; Time</th>
@@ -251,6 +260,7 @@
               {% endif %}
             </td>
             <td class="td-device">{{ call.received_by }}</td>
+            <td class="td-device">{{ call.sim|default:"—" }}</td>
             <td>
               {% if call.status == 'answered' %}
                 <span class="badge badge-answered">
@@ -272,11 +282,11 @@
           {% endfor %}
         {% else %}
           <tr class="empty-row">
-            <td colspan="6">
+            <td colspan="8">
               <svg width="40" height="40" viewBox="0 0 20 20" fill="#cbd5e1" style="margin-bottom:10px;display:block;margin-inline:auto;">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
               </svg>
-              No call logs found{% if active_status or active_device or from_date or to_date %} for this filter{% endif %}
+              No call logs found{% if active_status or active_device or active_sim or from_date or to_date %} for this filter{% endif %}
             </td>
           </tr>
         {% endif %}

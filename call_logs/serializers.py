@@ -5,7 +5,7 @@ from .models import CallLog
 class CallLogCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CallLog
-        fields = ['caller_number', 'received_by', 'direction', 'status', 'duration']
+        fields = ['caller_number', 'received_by', 'sim', 'direction', 'status', 'duration']
 
     def validate_status(self, value):
         if value not in ['answered', 'missed', 'rejected']:
@@ -21,4 +21,4 @@ class CallLogCreateSerializer(serializers.ModelSerializer):
 class CallLogSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CallLog
-        fields = ['id', 'caller_number', 'received_by', 'direction', 'status', 'duration', 'timestamp']
+        fields = ['id', 'caller_number', 'received_by', 'sim', 'direction', 'status', 'duration', 'timestamp']
