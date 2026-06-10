@@ -14,26 +14,38 @@ WHATSAPP_MEDIA_TYPES = {
 WHATSAPP_IMAGE_MIMES = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
 
 
-def _api_url():
-    return getattr(settings, 'WHATSAPP_API_URL', None)
-
 def _token():
     return getattr(settings, 'WHATSAPP_ACCESS_TOKEN', None)
 
-def _media_upload_url():
-    """Derive /media endpoint from /messages URL."""
-    url = _api_url()
-    if not url:
+def _api_version():
+    return getattr(settings, 'WHATSAPP_API_VERSION', 'v22.0')
+
+def _default_phone_id():
+    """Fallback number to send from when a message has no recorded business_phone_id."""
+    ids = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    return ids[0] if ids else None
+
+def _messages_url(phone_number_id=None):
+    """Build the Graph /messages endpoint for a given phone_number_id."""
+    pid = phone_number_id or _default_phone_id()
+    if not pid:
         return None
-    return url.replace('/messages', '/media')
+    return f'https://graph.facebook.com/{_api_version()}/{pid}/messages'
+
+def _media_upload_url(phone_number_id=None):
+    """Build the Graph /media endpoint for a given phone_number_id."""
+    pid = phone_number_id or _default_phone_id()
+    if not pid:
+        return None
+    return f'https://graph.facebook.com/{_api_version()}/{pid}/media'
 
 
-def send_whatsapp_reply(to_number, message_text):
-    api_url      = _api_url()
+def send_whatsapp_reply(to_number, message_text, phone_number_id=None):
+    api_url      = _messages_url(phone_number_id)
     access_token = _token()
 
     if not api_url or not access_token:
-        logger.error('WHATSAPP_API_URL or WHATSAPP_ACCESS_TOKEN not set in settings')
+        logger.error('No send URL (missing phone number ID) or WHATSAPP_ACCESS_TOKEN not set')
         return False
 
     payload = {
@@ -60,13 +72,13 @@ def send_whatsapp_reply(to_number, message_text):
         return False
 
 
-def upload_whatsapp_media(file_bytes, mime_type, filename):
+def upload_whatsapp_media(file_bytes, mime_type, filename, phone_number_id=None):
     """Upload file to Meta and return media_id, or None on failure."""
-    upload_url   = _media_upload_url()
+    upload_url   = _media_upload_url(phone_number_id)
     access_token = _token()
 
     if not upload_url or not access_token:
-        logger.error('WHATSAPP_API_URL or WHATSAPP_ACCESS_TOKEN not set')
+        logger.error('No send URL (missing phone number ID) or WHATSAPP_ACCESS_TOKEN not set')
         return None
 
     try:
@@ -88,13 +100,13 @@ def upload_whatsapp_media(file_bytes, mime_type, filename):
         return None
 
 
-def send_whatsapp_media(to_number, media_type, media_id, caption='', filename=''):
+def send_whatsapp_media(to_number, media_type, media_id, caption='', filename='', phone_number_id=None):
     """Send a media message using an already-uploaded media_id."""
-    api_url      = _api_url()
+    api_url      = _messages_url(phone_number_id)
     access_token = _token()
 
     if not api_url or not access_token:
-        logger.error('WHATSAPP_API_URL or WHATSAPP_ACCESS_TOKEN not set')
+        logger.error('No send URL (missing phone number ID) or WHATSAPP_ACCESS_TOKEN not set')
         return False
 
     media_obj = {'id': media_id}

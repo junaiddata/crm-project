@@ -92,6 +92,39 @@
     }
     .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
 
+    /* ── Number filter row ── */
+    .number-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 28px 4px; flex-wrap: wrap;
+    }
+    .number-bar-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #94a3b8; margin-right: 2px;
+    }
+    .num-tab {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; color: #475569; background: #fff;
+      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
+    }
+    .num-tab:hover { border-color: #10b981; color: #065f46; background: #f0fdf4; }
+    .num-tab.active { background: #ecfdf5; color: #065f46; border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.12); }
+    .num-tab .num-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .num-tab .num-count {
+      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+      background: #f1f5f9; color: #475569;
+    }
+    .num-tab.active .num-count { background: #d1fae5; color: #065f46; }
+
+    /* ── "via number" chip on each card ── */
+    .via-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
+      border-radius: 5px; padding: 1px 7px; font-size: 10.5px; font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .via-chip svg { flex-shrink: 0; }
+
     /* ── Feed ── */
     .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
 
@@ -348,6 +381,8 @@
 <!-- Controls -->
 <div class="controls">
   <form method="get" style="display:contents;">
+    {% if active_number != 'all' %}<input type="hidden" name="number" value="{{ active_number }}">{% endif %}
+    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
     <div class="search-wrap">
       <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
       <input name="q" value="{{ search }}" placeholder="Search by number or message…" autocomplete="off">
@@ -355,21 +390,37 @@
   </form>
 
   <div class="filter-tabs">
-    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
        class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
       All <span class="tab-count">{{ total }}</span>
     </a>
-    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
        class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
       Needs reply <span class="tab-count">{{ unreplied }}</span>
     </a>
-    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
        class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
       Replied <span class="tab-count">{{ replied_count }}</span>
     </a>
   </div>
 
   <div class="controls-right">{{ shown_count }} conversation{{ shown_count|pluralize }} shown</div>
+</div>
+
+<!-- Number filter -->
+<div class="number-bar">
+  <span class="number-bar-label">Number</span>
+  <a href="?number=all{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}"
+     class="num-tab {% if active_number == 'all' %}active{% endif %}">
+    All numbers <span class="num-count">{{ all_count }}</span>
+  </a>
+  {% for n in numbers %}
+  <a href="?number={{ n.id }}{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}"
+     class="num-tab {% if active_number == n.id %}active{% endif %}">
+    <span class="num-dot" style="background:{% cycle '#10b981' '#3b82f6' '#f59e0b' '#8b5cf6' '#ec4899' as numdot %};"></span>
+    {{ n.label }} <span class="num-count">{{ n.count }}</span>
+  </a>
+  {% endfor %}
 </div>
 
 <!-- Conversation feed -->
@@ -403,6 +454,12 @@
             {% if group.messages|length > 1 %}
               <span class="msg-count-chip">{{ group.messages|length }} messages</span>
             {% endif %}
+            {% if group.business_label %}
+              <span class="via-chip" title="Received on your number {{ group.business_label }}">
+                <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                {{ group.business_label }}
+              </span>
+            {% endif %}
           </div>
           {% else %}
           <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">+{{ group.sender }}</a>
@@ -410,6 +467,12 @@
             {{ group.first_time|date:"d M Y · H:i" }}
             {% if group.messages|length > 1 %}
               <span class="msg-count-chip">{{ group.messages|length }} messages</span>
+            {% endif %}
+            {% if group.business_label %}
+              <span class="via-chip" title="Received on your number {{ group.business_label }}">
+                <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+                {{ group.business_label }}
+              </span>
             {% endif %}
           </div>
           {% endif %}

@@ -12,6 +12,8 @@ class WhatsAppLead(models.Model):
 
     sender      = models.CharField(max_length=30)
     sender_name = models.CharField(max_length=255, blank=True)
+    # Which of OUR numbers received this message (Meta phone_number_id) — used to reply from the same number.
+    business_phone_id = models.CharField(max_length=40, blank=True)
     message_id  = models.CharField(max_length=255, unique=True)
     text_body   = models.TextField(blank=True)
     msg_type    = models.CharField(max_length=20, default='text', choices=MSG_TYPES)
@@ -67,6 +69,8 @@ class WhatsAppOutbound(models.Model):
     ]
 
     recipient  = models.CharField(max_length=30)
+    # Which of OUR numbers this was sent from (Meta phone_number_id).
+    business_phone_id = models.CharField(max_length=40, blank=True)
     msg_type   = models.CharField(max_length=20, default='text', choices=MSG_TYPES)
     text_body  = models.TextField(blank=True)
     media_file = models.FileField(upload_to='whatsapp_outbound/', blank=True, null=True)

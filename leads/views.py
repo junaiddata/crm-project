@@ -1,9 +1,11 @@
+import hashlib
+import hmac
 import json
 import logging
 
 from django.conf import settings
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -18,12 +20,100 @@ from .serializers import LeadSerializer
 logger = logging.getLogger(__name__)
 
 
+def _verify_meta_signature(request):
+    """Validate Meta's X-Hub-Signature-256 (HMAC-SHA256 of the raw body, App Secret key)."""
+    app_secret = getattr(settings, 'WHATSAPP_APP_SECRET', None)
+    if not app_secret:
+        return False
+    header_sig = request.headers.get('X-Hub-Signature-256', '')
+    if not header_sig.startswith('sha256='):
+        return False
+    expected = 'sha256=' + hmac.new(
+        app_secret.encode(), request.body, hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, header_sig)
+
+
+def _process_whatsapp_payload(payload, allowed_phone_ids=None):
+    """Store inbound messages. When allowed_phone_ids is given, only messages
+    received on those of OUR numbers are processed (others are ignored)."""
+    for entry in payload.get('entry', []):
+        for change in entry.get('changes', []):
+            if change.get('field') != 'messages':
+                continue
+            value = change.get('value', {})
+            business_phone_id = value.get('metadata', {}).get('phone_number_id', '')
+
+            # Only handle numbers we own natively; ignore anything else.
+            if allowed_phone_ids is not None and business_phone_id not in allowed_phone_ids:
+                continue
+
+            # Map wa_id → profile name from the contacts block
+            contact_names = {
+                c.get('wa_id', ''): c.get('profile', {}).get('name', '')
+                for c in value.get('contacts', [])
+            }
+            for msg in value.get('messages', []):
+                msg_type   = msg.get('type', '')
+                message_id = msg.get('id', '')
+                sender     = msg.get('from', '')
+                if not message_id or not sender:
+                    continue
+                sender_name = contact_names.get(sender, '')
+
+                if msg_type == 'text':
+                    text_body = msg.get('text', {}).get('body', '')
+                    WhatsAppLead.objects.get_or_create(
+                        message_id=message_id,
+                        defaults={'sender': sender, 'sender_name': sender_name,
+                                  'business_phone_id': business_phone_id,
+                                  'text_body': text_body, 'msg_type': 'text'},
+                    )
+
+                elif msg_type in ('image', 'video', 'audio', 'document', 'sticker'):
+                    stored_type = 'image' if msg_type == 'sticker' else msg_type
+                    media_data  = msg.get(msg_type, {})
+                    media_id    = media_data.get('id', '')
+                    caption     = media_data.get('caption', '')
+
+                    lead, created = WhatsAppLead.objects.get_or_create(
+                        message_id=message_id,
+                        defaults={'sender': sender, 'sender_name': sender_name,
+                                  'business_phone_id': business_phone_id,
+                                  'text_body': caption, 'msg_type': stored_type},
+                    )
+
+                    if created and media_id:
+                        from .utils import download_whatsapp_media
+                        from django.core.files.base import ContentFile
+                        file_bytes, mime_type, filename = download_whatsapp_media(media_id)
+                        if file_bytes:
+                            lead.media_name = filename
+                            lead.media_file.save(filename, ContentFile(file_bytes), save=True)
+
+
 @csrf_exempt
-@require_POST
 def whatsapp_webhook(request):
-    # Verify internal secret
-    secret = request.headers.get('X-Internal-Secret', '')
-    if secret != settings.CRM_WEBHOOK_SECRET:
+    # ── Meta webhook verification handshake (GET) ─────────────────────────────
+    if request.method == 'GET':
+        mode      = request.GET.get('hub.mode')
+        token     = request.GET.get('hub.verify_token')
+        challenge = request.GET.get('hub.challenge', '')
+        verify_token = getattr(settings, 'WHATSAPP_VERIFY_TOKEN', None)
+        if mode == 'subscribe' and verify_token and token == verify_token:
+            return HttpResponse(challenge, content_type='text/plain')
+        return HttpResponse('Forbidden', status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    # ── Authenticate the POST ────────────────────────────────────────────────
+    # Path 1 (legacy): the other app forwards with our internal secret.
+    internal_ok = request.headers.get('X-Internal-Secret', '') == settings.CRM_WEBHOOK_SECRET
+    # Path 2 (direct from Meta): valid X-Hub-Signature-256.
+    meta_ok = _verify_meta_signature(request)
+
+    if not internal_ok and not meta_ok:
         return JsonResponse({'error': 'Forbidden'}, status=403)
 
     try:
@@ -32,51 +122,12 @@ def whatsapp_webhook(request):
         return JsonResponse({'ok': True})  # always 200 to avoid retries
 
     try:
-        for entry in payload.get('entry', []):
-            for change in entry.get('changes', []):
-                if change.get('field') != 'messages':
-                    continue
-                value = change.get('value', {})
-                # Map wa_id → profile name from the contacts block
-                contact_names = {
-                    c.get('wa_id', ''): c.get('profile', {}).get('name', '')
-                    for c in value.get('contacts', [])
-                }
-                for msg in value.get('messages', []):
-                    msg_type   = msg.get('type', '')
-                    message_id = msg.get('id', '')
-                    sender     = msg.get('from', '')
-                    if not message_id or not sender:
-                        continue
-                    sender_name = contact_names.get(sender, '')
-
-                    if msg_type == 'text':
-                        text_body = msg.get('text', {}).get('body', '')
-                        WhatsAppLead.objects.get_or_create(
-                            message_id=message_id,
-                            defaults={'sender': sender, 'sender_name': sender_name,
-                                      'text_body': text_body, 'msg_type': 'text'},
-                        )
-
-                    elif msg_type in ('image', 'video', 'audio', 'document', 'sticker'):
-                        stored_type = 'image' if msg_type == 'sticker' else msg_type
-                        media_data  = msg.get(msg_type, {})
-                        media_id    = media_data.get('id', '')
-                        caption     = media_data.get('caption', '')
-
-                        lead, created = WhatsAppLead.objects.get_or_create(
-                            message_id=message_id,
-                            defaults={'sender': sender, 'sender_name': sender_name,
-                                      'text_body': caption, 'msg_type': stored_type},
-                        )
-
-                        if created and media_id:
-                            from .utils import download_whatsapp_media
-                            from django.core.files.base import ContentFile
-                            file_bytes, mime_type, filename = download_whatsapp_media(media_id)
-                            if file_bytes:
-                                lead.media_name = filename
-                                lead.media_file.save(filename, ContentFile(file_bytes), save=True)
+        if internal_ok:
+            # Trusted forward (e.g. old-number loop-back) — process everything.
+            _process_whatsapp_payload(payload)
+        else:
+            # Direct from Meta — only handle the numbers we own.
+            _process_whatsapp_payload(payload, allowed_phone_ids=settings.WHATSAPP_PHONE_NUMBER_IDS)
     except Exception:
         logger.exception('Error processing WhatsApp webhook payload')
 
@@ -111,7 +162,7 @@ def whatsapp_reply(request, pk):
         return JsonResponse({'error': 'Message is required'}, status=400)
 
     from .utils import send_whatsapp_reply as send_reply
-    success = send_reply(wa_lead.sender, message)
+    success = send_reply(wa_lead.sender, message, phone_number_id=wa_lead.business_phone_id)
 
     if success:
         wa_lead.replied = True
@@ -121,7 +172,7 @@ def whatsapp_reply(request, pk):
             WhatsAppLead.objects.filter(pk__in=also_mark_ids).update(replied=True, reply_text=message)
         return JsonResponse({'ok': True})
 
-    return JsonResponse({'error': 'Failed to send — check WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN'}, status=502)
+    return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
 
 
 CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF']
@@ -255,14 +306,25 @@ def _group_whatsapp_messages(qs, gap_seconds=60):
         g['reply_text'] = g['messages'][-1].reply_text
         # first available WhatsApp profile name for this sender
         g['sender_name'] = next((m.sender_name for m in g['messages'] if m.sender_name), '')
+        # which of OUR numbers this conversation came in on
+        labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+        g['business_phone_id'] = g['messages'][-1].business_phone_id
+        g['business_label'] = labels.get(g['business_phone_id'], '')
 
     groups.reverse()  # newest group first
     return groups
 
 
 def whatsapp_dashboard(request):
-    qs = WhatsAppLead.objects.all()
+    base = WhatsAppLead.objects.all()
 
+    # ── Filter by which of OUR numbers received the messages ──
+    active_number = request.GET.get('number', 'all')
+    number_base = base
+    if active_number != 'all':
+        number_base = base.filter(business_phone_id=active_number)
+
+    qs = number_base
     active_filter = request.GET.get('filter', 'all')
     if active_filter == 'unreplied':
         qs = qs.filter(replied=False)
@@ -273,9 +335,18 @@ def whatsapp_dashboard(request):
     if search:
         qs = qs.filter(Q(sender__icontains=search) | Q(text_body__icontains=search))
 
-    total     = WhatsAppLead.objects.count()
-    unreplied = WhatsAppLead.objects.filter(replied=False).count()
-    replied   = WhatsAppLead.objects.filter(replied=True).count()
+    # Reply/total counts respect the selected number
+    total     = number_base.count()
+    unreplied = number_base.filter(replied=False).count()
+    replied   = number_base.filter(replied=True).count()
+
+    # Per-number chips (independent of the reply filter)
+    labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    numbers = [
+        {'id': pid, 'label': labels.get(pid, pid),
+         'count': base.filter(business_phone_id=pid).count()}
+        for pid in getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    ]
 
     groups = _group_whatsapp_messages(qs)
 
@@ -283,6 +354,9 @@ def whatsapp_dashboard(request):
         'groups': groups,
         'shown_count': len(groups),
         'active_filter': active_filter,
+        'active_number': active_number,
+        'numbers': numbers,
+        'all_count': base.count(),
         'search': search,
         'total': total,
         'unreplied': unreplied,
@@ -352,6 +426,16 @@ def whatsapp_chat(request, sender):
     })
 
 
+def _business_phone_id_for(sender):
+    """The number this customer last contacted us on — so we reply from the same one."""
+    lead = (WhatsAppLead.objects
+            .filter(sender=sender)
+            .exclude(business_phone_id='')
+            .order_by('-received_at')
+            .first())
+    return lead.business_phone_id if lead else ''
+
+
 @csrf_exempt
 def whatsapp_chat_send(request, sender):
     if request.method != 'POST':
@@ -366,15 +450,17 @@ def whatsapp_chat_send(request, sender):
     if not message:
         return JsonResponse({'error': 'Message is required'}, status=400)
 
+    business_phone_id = _business_phone_id_for(sender)
     from .utils import send_whatsapp_reply as send_reply
-    success = send_reply(sender, message)
+    success = send_reply(sender, message, phone_number_id=business_phone_id)
 
     if success:
-        WhatsAppOutbound.objects.create(recipient=sender, msg_type='text', text_body=message)
+        WhatsAppOutbound.objects.create(recipient=sender, msg_type='text', text_body=message,
+                                        business_phone_id=business_phone_id)
         WhatsAppLead.objects.filter(sender=sender, replied=False).update(replied=True, reply_text=message)
         return JsonResponse({'ok': True})
 
-    return JsonResponse({'error': 'Failed to send — check WHATSAPP_API_URL and WHATSAPP_ACCESS_TOKEN'}, status=502)
+    return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
 
 
 @csrf_exempt
@@ -389,22 +475,25 @@ def whatsapp_chat_send_media(request, sender):
     caption    = request.POST.get('caption', '').strip()
     mime_type  = file.content_type or 'application/octet-stream'
 
+    business_phone_id = _business_phone_id_for(sender)
     from .utils import upload_whatsapp_media, send_whatsapp_media, mime_to_whatsapp_type
     media_type = mime_to_whatsapp_type(mime_type)
 
     file_bytes = file.read()
-    media_id   = upload_whatsapp_media(file_bytes, mime_type, file.name)
+    media_id   = upload_whatsapp_media(file_bytes, mime_type, file.name, phone_number_id=business_phone_id)
 
     if not media_id:
         return JsonResponse({'error': 'Failed to upload media to WhatsApp — check API credentials'}, status=502)
 
-    success = send_whatsapp_media(sender, media_type, media_id, caption=caption, filename=file.name)
+    success = send_whatsapp_media(sender, media_type, media_id, caption=caption,
+                                  filename=file.name, phone_number_id=business_phone_id)
 
     if success:
         from django.core.files.base import ContentFile
         outbound = WhatsAppOutbound(
             recipient=sender, msg_type=media_type,
             text_body=caption, media_name=file.name,
+            business_phone_id=business_phone_id,
         )
         outbound.media_file.save(file.name, ContentFile(file_bytes), save=True)
         WhatsAppLead.objects.filter(sender=sender, replied=False).update(

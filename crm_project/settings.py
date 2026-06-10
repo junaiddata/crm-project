@@ -104,5 +104,29 @@ _csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,ht
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
 
 CRM_WEBHOOK_SECRET   = os.environ.get('CRM_WEBHOOK_SECRET', 'a3f8c2e1b4d7a9f0c3e2b1d4a7f8c9e0b3d2a1f4')
-WHATSAPP_API_URL     = os.environ.get('WHATSAPP_API_URL')
-WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN')
+WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN')  # shared system-user token (same WABA/App)
+
+# ── WhatsApp Cloud API (direct webhook for our own marketing numbers) ──────────
+WHATSAPP_API_VERSION  = os.environ.get('WHATSAPP_API_VERSION', 'v22.0')
+# App Secret — used to verify Meta's X-Hub-Signature-256 on inbound webhooks.
+WHATSAPP_APP_SECRET   = os.environ.get('WHATSAPP_APP_SECRET')
+# Verify token — a string you invent; must match what you enter in Meta's webhook config.
+WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN')
+# Phone Number IDs we own and handle natively (all 3 marketing numbers).
+# Comma-separated env override; defaults:
+#   1155539744315001 → +971 55 123 6158
+#   1131190376754791 → +971 54 533 8872
+#   623707730818076  → +971 4 236 7723
+WHATSAPP_PHONE_NUMBER_IDS = [
+    pid.strip() for pid in os.environ.get(
+        'WHATSAPP_PHONE_NUMBER_IDS',
+        '1155539744315001,1131190376754791,623707730818076',
+    ).split(',') if pid.strip()
+]
+
+# Friendly display labels for each Phone Number ID (shown in the WhatsApp dashboard filters).
+WHATSAPP_NUMBER_LABELS = {
+    '1155539744315001': '+971 55 123 6158',
+    '1131190376754791': '+971 54 533 8872',
+    '623707730818076':  '+971 4 236 7723',
+}
