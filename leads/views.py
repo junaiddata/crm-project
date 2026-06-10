@@ -185,13 +185,17 @@ class LeadListCreateView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        # When adding from WhatsApp: if a lead already exists for this number,
-        # append only the NEW selected messages (message-level), instead of
-        # creating a duplicate lead.
+        # When adding from WhatsApp: one lead per customer per DAY.
+        #   • same number + same date  → append only the NEW selected messages
+        #   • same number, different day → fall through and create a separate lead
         if request.data.get('dedupeBySender'):
-            mobile = (request.data.get('mobileNo') or '').strip()
+            mobile    = (request.data.get('mobileNo') or '').strip()
+            lead_date = (request.data.get('date') or '').strip()
             if mobile:
-                existing = Lead.objects.filter(mobile_no=mobile).first()
+                lookup = Lead.objects.filter(mobile_no=mobile)
+                if lead_date:
+                    lookup = lookup.filter(date=lead_date)
+                existing = lookup.first()
                 if existing:
                     existing_lines = {l.strip() for l in existing.items.splitlines() if l.strip()}
                     new_lines = (request.data.get('items') or '').splitlines()
@@ -409,6 +413,7 @@ def whatsapp_chat(request, sender):
     labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
     id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
     distinct = list(all_incoming.exclude(business_phone_id='')
+                                .order_by()  # clear default ordering so DISTINCT works
                                 .values_list('business_phone_id', flat=True).distinct())
     distinct.sort(key=lambda pid: id_order.index(pid) if pid in id_order else 999)
 
@@ -500,7 +505,12 @@ def whatsapp_chat_send(request, sender):
     if success:
         WhatsAppOutbound.objects.create(recipient=sender, msg_type='text', text_body=message,
                                         business_phone_id=business_phone_id)
-        WhatsAppLead.objects.filter(sender=sender, replied=False).update(replied=True, reply_text=message)
+        # Mark the customer's messages on this number as replied (outbound record
+        # holds the text — don't also write reply_text or it shows twice).
+        mark = WhatsAppLead.objects.filter(sender=sender, replied=False)
+        if business_phone_id:
+            mark = mark.filter(business_phone_id=business_phone_id)
+        mark.update(replied=True)
         return JsonResponse({'ok': True})
 
     return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
@@ -539,9 +549,10 @@ def whatsapp_chat_send_media(request, sender):
             business_phone_id=business_phone_id,
         )
         outbound.media_file.save(file.name, ContentFile(file_bytes), save=True)
-        WhatsAppLead.objects.filter(sender=sender, replied=False).update(
-            replied=True, reply_text=f'[Sent {media_type}: {file.name}]'
-        )
+        mark = WhatsAppLead.objects.filter(sender=sender, replied=False)
+        if business_phone_id:
+            mark = mark.filter(business_phone_id=business_phone_id)
+        mark.update(replied=True)
         media_url = request.build_absolute_uri(outbound.media_file.url)
         return JsonResponse({'ok': True, 'media_type': media_type, 'media_url': media_url, 'media_name': file.name, 'caption': caption})
 
