@@ -255,6 +255,21 @@
     .sb-add:disabled { opacity: 0.5; cursor: not-allowed; }
     .sb-cancel { background: #fff; color: #64748b; border: 1px solid #cbd5e1; }
     .sb-cancel:hover { background: #f1f5f9; }
+
+    /* ── Number switcher (when a customer wrote to >1 of our numbers) ── */
+    .num-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; background: #054b38; overflow-x: auto; flex-shrink: 0;
+    }
+    .num-bar-label { font-size: 11px; font-weight: 700; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 2px; }
+    .num-bar a {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;
+      text-decoration: none; color: rgba(255,255,255,0.82);
+      background: rgba(255,255,255,0.12); white-space: nowrap; transition: all 0.15s;
+    }
+    .num-bar a:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .num-bar a.active { background: #fff; color: #065f46; }
   </style>
 </head>
 <body>
@@ -271,10 +286,10 @@
   <div class="header-info">
     {% if sender_name %}
     <div class="header-num">{{ sender_name }}</div>
-    <div class="header-sub">+{{ sender }} · {{ message_count }} message{{ message_count|pluralize }}</div>
+    <div class="header-sub">+{{ sender }} · {{ message_count }} message{{ message_count|pluralize }}{% if active_label %} · via {{ active_label }}{% endif %}</div>
     {% else %}
     <div class="header-num">+{{ sender }}</div>
-    <div class="header-sub">{{ message_count }} message{{ message_count|pluralize }} received</div>
+    <div class="header-sub">{{ message_count }} message{{ message_count|pluralize }} received{% if active_label %} · via {{ active_label }}{% endif %}</div>
     {% endif %}
   </div>
   <button class="lead-btn" id="leadModeBtn" onclick="toggleSelectMode()" style="margin-left:auto;">
@@ -286,6 +301,19 @@
     Home
   </a>
 </header>
+
+{% if numbers|length > 1 %}
+<!-- Number switcher: each number is a separate conversation -->
+<div class="num-bar">
+  <span class="num-bar-label">Chatting via</span>
+  {% for n in numbers %}
+  <a href="?number={{ n.id }}" class="{% if n.active %}active{% endif %}">
+    <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+    {{ n.label }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
 
 <!-- Chat messages -->
 <div class="chat-bg" id="chatBg">
@@ -440,9 +468,10 @@
 <div id="toast"></div>
 
 <script>
-  const SENDER      = '{{ sender|escapejs }}';
-  const SENDER_NAME = '{{ sender_name|escapejs }}';
-  const CSRF        = '{{ csrf_token }}';
+  const SENDER        = '{{ sender|escapejs }}';
+  const SENDER_NAME   = '{{ sender_name|escapejs }}';
+  const ACTIVE_NUMBER = '{{ active_number|escapejs }}';
+  const CSRF          = '{{ csrf_token }}';
 
   const chatBg   = document.getElementById('chatBg');
   const msgInput = document.getElementById('msgInput');
@@ -521,7 +550,7 @@
       const res  = await fetch('/api/whatsapp/chat/' + SENDER + '/send/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, number: ACTIVE_NUMBER }),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
@@ -543,6 +572,7 @@
     const form = new FormData();
     form.append('file', selectedFile);
     if (caption) form.append('caption', caption);
+    form.append('number', ACTIVE_NUMBER);
 
     try {
       const res  = await fetch('/api/whatsapp/chat/' + SENDER + '/send-media/', {

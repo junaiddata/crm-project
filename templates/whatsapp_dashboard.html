@@ -121,8 +121,9 @@
       display: inline-flex; align-items: center; gap: 4px;
       background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
       border-radius: 5px; padding: 1px 7px; font-size: 10.5px; font-weight: 700;
-      letter-spacing: 0.01em;
+      letter-spacing: 0.01em; text-decoration: none; transition: all 0.12s;
     }
+    .via-chip:hover { background: #d1fae5; border-color: #6ee7b7; }
     .via-chip svg { flex-shrink: 0; }
 
     /* ── Feed ── */
@@ -429,17 +430,6 @@
   {% for group in groups %}
   {% with gid=group.reply_pk %}
 
-  <!-- Store lead data -->
-  <script>
-    window._waLeadData = window._waLeadData || {};
-    window._waLeadData[{{ gid }}] = {
-      sender: '{{ group.sender|escapejs }}',
-      name: '{{ group.sender_name|escapejs }}',
-      date: '{{ group.first_time|date:"Y-m-d" }}',
-      query: '{% for msg in group.messages %}{% if msg.text_body %}{{ msg.text_body|escapejs }}{% endif %}{% if msg.media_file %}{% if msg.text_body %}\n{% endif %}{{ msg.get_msg_type_display|escapejs }}: {{ request.scheme|escapejs }}://{{ request.get_host|escapejs }}{{ msg.media_file.url|escapejs }}{% endif %}{% if not forloop.last %}\n{% endif %}{% endfor %}'
-    };
-  </script>
-
   <div class="conv-card {% if group.all_replied %}is-replied{% endif %}" id="card-{{ gid }}">
 
     <!-- Top row: avatar + sender info + badge -->
@@ -455,10 +445,10 @@
               <span class="msg-count-chip">{{ group.count }} messages</span>
             {% endif %}
             {% for n in group.numbers %}
-              <span class="via-chip" title="Received on your number {{ n.label }}">
+              <a class="via-chip" href="/whatsapp/chat/{{ group.sender }}/?number={{ n.id }}" title="Open chat via {{ n.label }}">
                 <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
                 {{ n.label }}
-              </span>
+              </a>
             {% endfor %}
           </div>
           {% else %}
@@ -469,10 +459,10 @@
               <span class="msg-count-chip">{{ group.count }} messages</span>
             {% endif %}
             {% for n in group.numbers %}
-              <span class="via-chip" title="Received on your number {{ n.label }}">
+              <a class="via-chip" href="/whatsapp/chat/{{ group.sender }}/?number={{ n.id }}" title="Open chat via {{ n.label }}">
                 <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
                 {{ n.label }}
-              </span>
+              </a>
             {% endfor %}
           </div>
           {% endif %}
@@ -529,14 +519,10 @@
 
     <!-- Action bar -->
     <div class="card-actions" id="actions-{{ gid }}">
-      <a href="/whatsapp/chat/{{ group.sender }}/" class="action-btn btn-view-chat">
+      <a href="/whatsapp/chat/{{ group.sender }}/{% if group.business_phone_id %}?number={{ group.business_phone_id }}{% endif %}" class="action-btn btn-view-chat">
         <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
         View Chat
       </a>
-      <button class="action-btn btn-add-lead" onclick="sendToLeads({{ gid }})">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
-        Add to Leads
-      </button>
       {% if group.any_unreplied %}
       <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
         <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -659,50 +645,6 @@
       body: JSON.stringify({ message: '', undo: true, also_mark_ids: alsoMarkIds }),
     });
     if (res.ok) location.reload();
-  }
-
-  async function sendToLeads(gid) {
-    const d = (window._waLeadData || {})[gid];
-    if (!d) return;
-
-    const btn = document.querySelector('#card-' + gid + ' .btn-add-lead');
-    const origHtml = btn ? btn.innerHTML : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-
-    try {
-      const res = await fetch('/api/leads/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({
-          date: d.date,
-          mobileNo: d.sender,
-          name: d.name || '',
-          platform: 'Whatsapp',
-          items: d.query,
-          dedupeBySender: true,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data.duplicate) {
-          showToast('Already in Leads — +' + d.sender, '#d97706');
-        } else {
-          showToast('Lead created for +' + d.sender, '#1d4ed8');
-        }
-        if (btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Added';
-          return;
-        }
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(err.detail || err.date || 'Failed to create lead', '#dc2626');
-      }
-    } catch {
-      showToast('Network error', '#dc2626');
-    }
-
-    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
   }
 
   function showToast(msg, color) {

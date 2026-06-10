@@ -387,8 +387,31 @@ def mark_replied(request, pk):
 def whatsapp_chat(request, sender):
     from datetime import timedelta
 
-    incoming = list(WhatsAppLead.objects.filter(sender=sender).order_by('received_at'))
-    outbound = list(WhatsAppOutbound.objects.filter(recipient=sender).order_by('sent_at'))
+    all_incoming = WhatsAppLead.objects.filter(sender=sender)
+
+    # Each (customer ↔ our number) is its own conversation. Build a tab per number.
+    labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    distinct = list(all_incoming.exclude(business_phone_id='')
+                                .values_list('business_phone_id', flat=True).distinct())
+    distinct.sort(key=lambda pid: id_order.index(pid) if pid in id_order else 999)
+
+    # Active number: from query string, else the most recent one this sender used.
+    active_number = request.GET.get('number', '')
+    if active_number not in distinct:
+        latest = all_incoming.order_by('-received_at').first()
+        active_number = latest.business_phone_id if latest and latest.business_phone_id else ''
+
+    numbers = [{'id': pid, 'label': labels.get(pid, pid), 'active': pid == active_number}
+               for pid in distinct]
+
+    # Scope the thread to the active number (fall back to everything for legacy data).
+    if active_number:
+        incoming = list(all_incoming.filter(business_phone_id=active_number).order_by('received_at'))
+        outbound = list(WhatsAppOutbound.objects.filter(recipient=sender, business_phone_id=active_number).order_by('sent_at'))
+    else:
+        incoming = list(all_incoming.order_by('received_at'))
+        outbound = list(WhatsAppOutbound.objects.filter(recipient=sender).order_by('sent_at'))
 
     timeline = []
     for msg in incoming:
@@ -424,6 +447,9 @@ def whatsapp_chat(request, sender):
         'sender_name': sender_name,
         'timeline': timeline,
         'message_count': len(incoming),
+        'numbers': numbers,
+        'active_number': active_number,
+        'active_label': labels.get(active_number, ''),
     })
 
 
@@ -451,7 +477,7 @@ def whatsapp_chat_send(request, sender):
     if not message:
         return JsonResponse({'error': 'Message is required'}, status=400)
 
-    business_phone_id = _business_phone_id_for(sender)
+    business_phone_id = body.get('number') or _business_phone_id_for(sender)
     from .utils import send_whatsapp_reply as send_reply
     success = send_reply(sender, message, phone_number_id=business_phone_id)
 
@@ -476,7 +502,7 @@ def whatsapp_chat_send_media(request, sender):
     caption    = request.POST.get('caption', '').strip()
     mime_type  = file.content_type or 'application/octet-stream'
 
-    business_phone_id = _business_phone_id_for(sender)
+    business_phone_id = request.POST.get('number') or _business_phone_id_for(sender)
     from .utils import upload_whatsapp_media, send_whatsapp_media, mime_to_whatsapp_type
     media_type = mime_to_whatsapp_type(mime_type)
 
