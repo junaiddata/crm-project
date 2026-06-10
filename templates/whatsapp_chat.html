@@ -723,7 +723,9 @@
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        showToast(data.duplicate ? 'Already in Leads' : 'Lead created', data.duplicate ? '#d97706' : '#1d4ed8');
+        if (data.appended)      showToast('Added ' + data.added + ' message' + (data.added > 1 ? 's' : '') + ' to lead', '#1d4ed8');
+        else if (data.duplicate) showToast('Already in Leads — nothing new', '#d97706');
+        else                     showToast('Lead created', '#1d4ed8');
         toggleSelectMode();
       } else {
         const err = await res.json().catch(() => ({}));
