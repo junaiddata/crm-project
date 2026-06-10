@@ -451,29 +451,29 @@
           <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">{{ group.sender_name }}</a>
           <div class="sender-meta">
             +{{ group.sender }} · {{ group.first_time|date:"d M Y · H:i" }}
-            {% if group.messages|length > 1 %}
-              <span class="msg-count-chip">{{ group.messages|length }} messages</span>
+            {% if group.count > 1 %}
+              <span class="msg-count-chip">{{ group.count }} messages</span>
             {% endif %}
-            {% if group.business_label %}
-              <span class="via-chip" title="Received on your number {{ group.business_label }}">
+            {% for n in group.numbers %}
+              <span class="via-chip" title="Received on your number {{ n.label }}">
                 <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                {{ group.business_label }}
+                {{ n.label }}
               </span>
-            {% endif %}
+            {% endfor %}
           </div>
           {% else %}
           <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">+{{ group.sender }}</a>
           <div class="sender-meta">
             {{ group.first_time|date:"d M Y · H:i" }}
-            {% if group.messages|length > 1 %}
-              <span class="msg-count-chip">{{ group.messages|length }} messages</span>
+            {% if group.count > 1 %}
+              <span class="msg-count-chip">{{ group.count }} messages</span>
             {% endif %}
-            {% if group.business_label %}
-              <span class="via-chip" title="Received on your number {{ group.business_label }}">
+            {% for n in group.numbers %}
+              <span class="via-chip" title="Received on your number {{ n.label }}">
                 <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                {{ group.business_label }}
+                {{ n.label }}
               </span>
-            {% endif %}
+            {% endfor %}
           </div>
           {% endif %}
         </div>
@@ -484,9 +484,9 @@
       </span>
     </div>
 
-    <!-- Message bubbles -->
+    <!-- Latest message preview -->
     <div class="card-messages">
-      {% for msg in group.messages %}
+      {% with msg=group.latest %}
       <div class="msg-bubble-wrap">
         {% if msg.msg_type == 'image' %}
           <div class="msg-bubble">📷 {% if msg.text_body %}{{ msg.text_body }}{% else %}Photo{% endif %}</div>
@@ -505,7 +505,7 @@
           <div class="msg-tooltip">{{ msg.text_body }}</div>
         {% endif %}
       </div>
-      {% endfor %}
+      {% endwith %}
     </div>
 
     <!-- Reply sent indicator -->

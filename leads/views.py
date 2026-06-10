@@ -267,54 +267,52 @@ class SalespersonListView(APIView):
 
 # ── WhatsApp dashboard (server-rendered) ──────────────────────────────────────
 
-def _group_whatsapp_messages(qs, gap_seconds=60):
-    """Group consecutive messages from the same sender within gap_seconds into conversation groups."""
-    messages = list(qs)  # ordered -received_at (newest first)
+def _conversations_by_sender(qs):
+    """One conversation card per sender, showing the latest message.
+
+    qs is ordered newest-first; the first time we meet a sender is their latest
+    message, so the result is naturally ordered by most-recent activity."""
+    messages = list(qs)  # newest first
     if not messages:
         return []
 
-    # Process in chronological order for proper consecutive grouping
-    chrono = list(reversed(messages))
-    groups = []
-    current = None
-
-    for msg in chrono:
-        if (current is None
-                or msg.sender != current['sender']
-                or msg.business_phone_id != current['business_phone_id']
-                or (msg.received_at - current['last_time']).total_seconds() > gap_seconds):
-            if current:
-                groups.append(current)
-            current = {
-                'sender': msg.sender,
-                'business_phone_id': msg.business_phone_id,
-                'messages': [msg],
-                'first_time': msg.received_at,
-                'last_time': msg.received_at,
-            }
+    labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    convs = {}
+    order = []
+    for msg in messages:  # newest first
+        if msg.sender not in convs:
+            convs[msg.sender] = {'sender': msg.sender, 'latest': msg, 'messages': [msg]}
+            order.append(msg.sender)
         else:
-            current['messages'].append(msg)
-            current['last_time'] = msg.received_at
+            convs[msg.sender]['messages'].append(msg)
 
-    if current:
-        groups.append(current)
-
-    for g in groups:
-        g['all_ids'] = [m.id for m in g['messages']]
-        g['all_replied'] = all(m.replied for m in g['messages'])
-        g['any_unreplied'] = any(not m.replied for m in g['messages'])
-        # use last (most recent) message pk for the reply endpoint
-        g['reply_pk'] = g['messages'][-1].id
-        g['reply_text'] = g['messages'][-1].reply_text
-        # first available WhatsApp profile name for this sender
-        g['sender_name'] = next((m.sender_name for m in g['messages'] if m.sender_name), '')
-        # which of OUR numbers this conversation came in on
-        labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
-        g['business_phone_id'] = g['messages'][-1].business_phone_id
-        g['business_label'] = labels.get(g['business_phone_id'], '')
-
-    groups.reverse()  # newest group first
-    return groups
+    result = []
+    for sender in order:
+        c = convs[sender]
+        msgs = c['messages']      # newest first
+        latest = c['latest']
+        # distinct numbers this sender contacted, most-recent first
+        distinct = []
+        for m in msgs:
+            if m.business_phone_id and m.business_phone_id not in distinct:
+                distinct.append(m.business_phone_id)
+        result.append({
+            'sender': sender,
+            'sender_name': next((m.sender_name for m in msgs if m.sender_name), ''),
+            'latest': latest,
+            'first_time': latest.received_at,   # template shows this as the timestamp
+            'count': len(msgs),
+            'messages': list(reversed(msgs)),   # chronological (for Add-to-Leads payload)
+            'all_ids': [m.id for m in msgs],
+            'any_unreplied': any(not m.replied for m in msgs),
+            'all_replied': all(m.replied for m in msgs),
+            'reply_pk': latest.id,
+            'reply_text': latest.reply_text,
+            'business_phone_id': latest.business_phone_id,
+            'business_label': labels.get(latest.business_phone_id, ''),
+            'numbers': [{'id': pid, 'label': labels.get(pid, pid)} for pid in distinct],
+        })
+    return result
 
 
 def whatsapp_dashboard(request):
@@ -350,7 +348,7 @@ def whatsapp_dashboard(request):
         for pid in getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
     ]
 
-    groups = _group_whatsapp_messages(qs)
+    groups = _conversations_by_sender(qs)
 
     return render(request, 'whatsapp_dashboard.html', {
         'groups': groups,
@@ -396,6 +394,7 @@ def whatsapp_chat(request, sender):
     for msg in incoming:
         timeline.append({
             'dir':        'in',
+            'id':         msg.id,
             'text':       msg.text_body,
             'time':       msg.received_at,
             'msg_type':   msg.msg_type,

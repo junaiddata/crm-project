@@ -211,6 +211,50 @@
       justify-content: center; height: 100%; gap: 12px; color: #8a7a6a;
     }
     .empty-chat p { font-size: 14px; }
+
+    /* ── Add-to-Leads selection mode ── */
+    .lead-btn {
+      display: flex; align-items: center; gap: 6px;
+      color: #fff; font-size: 13px; font-weight: 600; padding: 6px 12px;
+      border-radius: 7px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.14); cursor: pointer; font-family: inherit;
+      transition: all 0.15s; flex-shrink: 0; white-space: nowrap;
+    }
+    .lead-btn:hover { background: rgba(255,255,255,0.26); }
+    .lead-btn.active { background: #fff; color: #065f46; border-color: #fff; }
+
+    .sel-check {
+      display: none; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #b8c4b0; background: #fff; flex-shrink: 0;
+      align-self: center; margin-right: 8px;
+      align-items: center; justify-content: center;
+    }
+    body.select-mode .msg-row.in { cursor: pointer; }
+    body.select-mode .msg-row.in .sel-check { display: flex; }
+    .sel-check svg { display: none; }
+    .msg-row.in.selected .sel-check { background: #059669; border-color: #059669; }
+    .msg-row.in.selected .sel-check svg { display: block; }
+    body.select-mode .msg-row.in.selected .bubble { box-shadow: 0 0 0 2px #059669; }
+    body.select-mode .input-area { display: none; }
+    body.select-mode .msg-row.out { opacity: 0.55; }
+
+    .select-bar {
+      display: none; align-items: center; justify-content: space-between;
+      gap: 10px; background: #ecfdf5; border-top: 1px solid #a7f3d0;
+      padding: 11px 16px; flex-shrink: 0;
+    }
+    .select-bar.show { display: flex; }
+    .select-bar-info { font-size: 13px; font-weight: 700; color: #065f46; }
+    .select-bar-btns { display: flex; gap: 8px; }
+    .sb-btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .sb-add { background: #059669; color: #fff; }
+    .sb-add:hover:not(:disabled) { background: #047857; }
+    .sb-add:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sb-cancel { background: #fff; color: #64748b; border: 1px solid #cbd5e1; }
+    .sb-cancel:hover { background: #f1f5f9; }
   </style>
 </head>
 <body>
@@ -233,7 +277,11 @@
     <div class="header-sub">{{ message_count }} message{{ message_count|pluralize }} received</div>
     {% endif %}
   </div>
-  <a href="/" class="back-btn" style="margin-left:auto;">
+  <button class="lead-btn" id="leadModeBtn" onclick="toggleSelectMode()" style="margin-left:auto;">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+    Add to Leads
+  </button>
+  <a href="/" class="back-btn">
     <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
     Home
   </a>
@@ -248,7 +296,24 @@
     <div class="day-divider"><span>{{ item.time|date:"d F Y" }}</span></div>
     {% endif %}
 
-    <div class="msg-row {{ item.dir }}">
+    {% if item.dir == 'in' %}
+    <script>
+      window.MSG_DATA = window.MSG_DATA || {};
+      window.MSG_DATA[{{ item.id }}] = {
+        text: '{{ item.text|escapejs }}',
+        type: '{{ item.msg_type|escapejs }}',
+        media: '{% if item.media_url %}{{ request.scheme }}://{{ request.get_host }}{{ item.media_url|escapejs }}{% endif %}',
+        date: '{{ item.time|date:"Y-m-d" }}'
+      };
+    </script>
+    {% endif %}
+
+    <div class="msg-row {{ item.dir }}"{% if item.dir == 'in' %} data-id="{{ item.id }}" onclick="toggleMsg(event, this, {{ item.id }})"{% endif %}>
+      {% if item.dir == 'in' %}
+      <div class="sel-check">
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="#fff"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      </div>
+      {% endif %}
       <div class="bubble bubble-{{ item.dir }}">
 
         {% if item.msg_type == 'image' %}
@@ -336,6 +401,15 @@
   <button id="preview-remove" onclick="clearFile()" title="Remove">×</button>
 </div>
 
+<!-- Selection action bar (Add to Leads) -->
+<div class="select-bar" id="selectBar">
+  <div class="select-bar-info" id="selCount">Tap messages to select</div>
+  <div class="select-bar-btns">
+    <button class="sb-btn sb-cancel" onclick="toggleSelectMode()">Cancel</button>
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="addSelectedToLeads()" disabled>Add to Leads</button>
+  </div>
+</div>
+
 <!-- Input area -->
 <div class="input-area">
   <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
@@ -366,8 +440,9 @@
 <div id="toast"></div>
 
 <script>
-  const SENDER = '{{ sender|escapejs }}';
-  const CSRF   = '{{ csrf_token }}';
+  const SENDER      = '{{ sender|escapejs }}';
+  const SENDER_NAME = '{{ sender_name|escapejs }}';
+  const CSRF        = '{{ csrf_token }}';
 
   const chatBg   = document.getElementById('chatBg');
   const msgInput = document.getElementById('msgInput');
@@ -552,7 +627,87 @@
       : '<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
   }
 
+  // ── Add to Leads: message selection ─────────────────────────────────────────
+
+  const selected = new Set();
+
+  function toggleSelectMode() {
+    const on = !document.body.classList.contains('select-mode');
+    document.body.classList.toggle('select-mode', on);
+    document.getElementById('selectBar').classList.toggle('show', on);
+    document.getElementById('leadModeBtn').classList.toggle('active', on);
+    if (!on) {
+      selected.clear();
+      document.querySelectorAll('.msg-row.in.selected').forEach(r => r.classList.remove('selected'));
+    }
+    updateSelCount();
+  }
+
+  function toggleMsg(e, row, id) {
+    if (!document.body.classList.contains('select-mode')) return;
+    e.preventDefault();   // stop links/lightbox while selecting
+    if (selected.has(id)) { selected.delete(id); row.classList.remove('selected'); }
+    else { selected.add(id); row.classList.add('selected'); }
+    updateSelCount();
+  }
+
+  function updateSelCount() {
+    const n = selected.size;
+    document.getElementById('selCount').textContent = n ? (n + ' message' + (n > 1 ? 's' : '') + ' selected') : 'Tap messages to select';
+    document.getElementById('sbAddBtn').disabled = n === 0;
+  }
+
+  async function addSelectedToLeads() {
+    if (!selected.size) return;
+    const ids = [...selected].sort((a, b) => a - b);  // chronological (ids grow over time)
+
+    const parts = [];
+    let date = '';
+    ids.forEach(id => {
+      const d = (window.MSG_DATA || {})[id];
+      if (!d) return;
+      let line = d.text || '';
+      if (d.media) {
+        const desc = d.type.charAt(0).toUpperCase() + d.type.slice(1) + ': ' + d.media;
+        line = line ? (line + '\n' + desc) : desc;
+      }
+      if (line) parts.push(line);
+      if (d.date > date) date = d.date;
+    });
+
+    const btn = document.getElementById('sbAddBtn');
+    btn.disabled = true; btn.textContent = 'Adding…';
+
+    try {
+      const res = await fetch('/api/leads/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          date: date || new Date().toISOString().slice(0, 10),
+          mobileNo: SENDER,
+          name: SENDER_NAME || '',
+          platform: 'Whatsapp',
+          items: parts.join('\n'),
+          dedupeBySender: true,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        showToast(data.duplicate ? 'Already in Leads' : 'Lead created', data.duplicate ? '#d97706' : '#1d4ed8');
+        toggleSelectMode();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || err.date || 'Failed to add', '#dc2626');
+        btn.disabled = false; btn.textContent = 'Add to Leads';
+      }
+    } catch {
+      showToast('Network error', '#dc2626');
+      btn.disabled = false; btn.textContent = 'Add to Leads';
+    }
+  }
+
   function openLightbox(src) {
+    if (document.body.classList.contains('select-mode')) return;
     document.getElementById('lightbox-img').src = src;
     document.getElementById('lightbox').classList.add('show');
   }
