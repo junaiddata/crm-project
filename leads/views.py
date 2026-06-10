@@ -281,11 +281,13 @@ def _group_whatsapp_messages(qs, gap_seconds=60):
     for msg in chrono:
         if (current is None
                 or msg.sender != current['sender']
+                or msg.business_phone_id != current['business_phone_id']
                 or (msg.received_at - current['last_time']).total_seconds() > gap_seconds):
             if current:
                 groups.append(current)
             current = {
                 'sender': msg.sender,
+                'business_phone_id': msg.business_phone_id,
                 'messages': [msg],
                 'first_time': msg.received_at,
                 'last_time': msg.received_at,
