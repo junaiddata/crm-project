@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Settings — CRM</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+      color: #fff;
+      padding: 0 28px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-size: 16px; font-weight: 700; }
+    .header-sub   { font-size: 11.5px; color: #93c5fd; margin-top: 1px; }
+    .header-link {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      transition: all 0.15s;
+    }
+    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    .page { max-width: 760px; width: 100%; margin: 0 auto; padding: 28px 20px 48px; flex: 1; }
+
+    .notice {
+      border-radius: 10px; padding: 12px 18px; margin-bottom: 16px;
+      font-size: 13px; display: flex; align-items: flex-start; gap: 10px;
+    }
+    .notice-ok   { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .notice-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .notice-err  { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+    .notice code { background: rgba(0,0,0,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px; word-break: break-all; }
+
+    .card {
+      background: #fff; border-radius: 14px; padding: 24px 26px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+      margin-bottom: 16px;
+    }
+    .card h2 { font-size: 14px; font-weight: 800; margin-bottom: 4px; color: #1e293b; }
+    .card .card-sub { font-size: 12px; color: #64748b; margin-bottom: 18px; }
+
+    /* Provider presets */
+    .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .preset-btn {
+      padding: 8px 16px; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+      background: #f8fafc; color: #334155; border: 1.5px solid #e2e8f0;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .preset-btn:hover { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { font-size: 11.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+    .field input[type=text], .field input[type=email], .field input[type=password],
+    .field input[type=number], .field input[type=date] {
+      height: 40px; padding: 0 13px; border: 1.5px solid #dde3ea; border-radius: 9px;
+      font-size: 13.5px; font-family: inherit; color: #0f172a; outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s; background: #fff; width: 100%;
+    }
+    .field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .field .hint { font-size: 11.5px; color: #94a3b8; }
+
+    .toggle-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; cursor: pointer; transition: all 0.15s;
+    }
+    .toggle-row:hover { border-color: #cbd5e1; }
+    .toggle-row input { width: 17px; height: 17px; accent-color: #2563eb; cursor: pointer; }
+    .toggle-row .t-label { font-size: 13px; font-weight: 700; color: #1e293b; }
+    .toggle-row .t-sub { font-size: 11.5px; color: #64748b; }
+
+    .actions { display: flex; gap: 10px; margin-top: 22px; align-items: center; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 24px; border-radius: 9px; font-size: 13.5px; font-weight: 700;
+      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 10px 20px; border-radius: 9px; font-size: 13.5px; font-weight: 700;
+      background: #fff; color: #1d4ed8; border: 1.5px solid #bfdbfe; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: #eff6ff; border-color: #93c5fd; }
+
+    .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+    .test-item {
+      border-radius: 10px; padding: 12px 16px; font-size: 12.5px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .test-ok  { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+    .test-bad { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+    .test-item .t-name { font-weight: 800; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .test-item .t-msg { word-break: break-word; }
+
+    .meta-line { font-size: 12px; color: #64748b; margin-top: 14px; }
+    .meta-line code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11.5px; }
+
+    footer {
+      padding: 14px 28px; text-align: center; font-size: 11.5px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    footer a { color: #2563eb; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Company Logo"
+         style="height:38px; object-fit:contain; max-width:130px; display:block; filter:brightness(0) invert(1);">
+    <div>
+      <div class="header-title">Email Settings</div>
+      <div class="header-sub">Sales mailbox · IMAP receiving + SMTP sending</div>
+    </div>
+  </div>
+  <a href="/emails/" class="header-link">← Email Manager</a>
+</header>
+
+<div class="page">
+
+  {% if saved %}
+  <div class="notice notice-ok">
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="flex-shrink:0;margin-top:1px;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+    <span>Settings saved.{% if cfg.enabled and cfg.is_configured %} Email integration is <strong>active</strong> — new mail is pulled by the fetch job and the “Check mail now” button.{% endif %}</span>
+  </div>
+  {% endif %}
+
+  {% if test_results %}
+  <div class="card">
+    <h2>Connection test</h2>
+    <div class="test-grid">
+      <div class="test-item {% if test_results.imap == 'ok' %}test-ok{% else %}test-bad{% endif %}">
+        <span class="t-name">IMAP (receiving)</span>
+        <span class="t-msg">{% if test_results.imap == 'ok' %}✓ Connected and logged in{% else %}✗ {{ test_results.imap }}{% endif %}</span>
+      </div>
+      <div class="test-item {% if test_results.smtp == 'ok' %}test-ok{% else %}test-bad{% endif %}">
+        <span class="t-name">SMTP (sending)</span>
+        <span class="t-msg">{% if test_results.smtp == 'ok' %}✓ Connected and logged in{% else %}✗ {{ test_results.smtp }}{% endif %}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="card">
+      <h2>Quick fill</h2>
+      <div class="card-sub">Pick your provider to fill in the host and port fields, then add the mailbox and password below.</div>
+      <div class="presets">
+        {% for p in presets %}
+        <button type="button" class="preset-btn"
+                onclick="applyPreset('{{ p.imap_host }}', {{ p.imap_port }}, '{{ p.smtp_host }}', {{ p.smtp_port }}, {{ p.ssl|yesno:'true,false' }})">
+          {{ p.label }}
+        </button>
+        {% endfor %}
+      </div>
+
+      <h2>Mailbox</h2>
+      <div class="card-sub">The sales address the CRM reads from and sends as (e.g. sales@junaid.ae).</div>
+      <div class="grid">
+        <div class="field">
+          <label for="email_address">Email address</label>
+          <input type="email" id="email_address" name="email_address" value="{{ cfg.email_address }}" placeholder="sales@junaid.ae" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="display_name">Display name</label>
+          <input type="text" id="display_name" name="display_name" value="{{ cfg.display_name }}" placeholder="Junaid Sales Team">
+        </div>
+        <div class="field full">
+          <label for="password">Password / app password</label>
+          <input type="password" id="password" name="password" value="" placeholder="{% if cfg.password %}•••••••• (saved — leave blank to keep){% else %}Mailbox or app password{% endif %}" autocomplete="new-password">
+          <span class="hint">If the account uses 2-step verification, create an app-specific password in your mail provider and use it here.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Servers</h2>
+      <div class="card-sub">IMAP is used to pull incoming mail; SMTP to send replies.</div>
+      <div class="grid">
+        <div class="field">
+          <label for="imap_host">IMAP host</label>
+          <input type="text" id="imap_host" name="imap_host" value="{{ cfg.imap_host }}" placeholder="imap.zoho.com">
+        </div>
+        <div class="field">
+          <label for="imap_port">IMAP port</label>
+          <input type="number" id="imap_port" name="imap_port" value="{{ cfg.imap_port }}" placeholder="993">
+        </div>
+        <div class="field">
+          <label for="smtp_host">SMTP host</label>
+          <input type="text" id="smtp_host" name="smtp_host" value="{{ cfg.smtp_host }}" placeholder="smtp.zoho.com">
+        </div>
+        <div class="field">
+          <label for="smtp_port">SMTP port</label>
+          <input type="number" id="smtp_port" name="smtp_port" value="{{ cfg.smtp_port }}" placeholder="465">
+        </div>
+        <div class="field full">
+          <label class="toggle-row" style="margin-top:2px;">
+            <input type="checkbox" id="smtp_use_ssl" name="smtp_use_ssl" {% if cfg.smtp_use_ssl %}checked{% endif %}>
+            <span>
+              <span class="t-label">SMTP over SSL</span><br>
+              <span class="t-sub">On for port 465 (SSL) · off for port 587 (STARTTLS)</span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sync</h2>
+      <div class="grid">
+        <div class="field full">
+          <label class="toggle-row">
+            <input type="checkbox" name="enabled" {% if cfg.enabled %}checked{% endif %}>
+            <span>
+              <span class="t-label">Enable email integration</span><br>
+              <span class="t-sub">When on, the fetch job pulls new mail into the Email Manager</span>
+            </span>
+          </label>
+        </div>
+        <div class="field">
+          <label for="fetch_since">Fetch mail since</label>
+          <input type="date" id="fetch_since" name="fetch_since" value="{{ cfg.fetch_since|date:'Y-m-d' }}">
+          <span class="hint">First sync only — older mail is ignored (default: last 30 days)</span>
+        </div>
+      </div>
+
+      {% if cfg.last_fetch_at %}
+      <div class="meta-line">Last fetch: {{ cfg.last_fetch_at|date:"d M Y · H:i" }} — {{ cfg.last_fetch_info }}</div>
+      {% endif %}
+      <div class="meta-line">On the server, schedule <code>python manage.py fetch_emails</code> every 3–5 minutes (cron) so mail arrives automatically.</div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary" name="action" value="save">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z"/></svg>
+          Save
+        </button>
+        <button type="submit" class="btn-secondary" name="action" value="test">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+          Save &amp; Test connection
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<footer>
+  <a href="/emails/">← Email Manager</a> &nbsp;·&nbsp; <a href="/">Home</a>
+</footer>
+
+<script>
+  function applyPreset(imapHost, imapPort, smtpHost, smtpPort, ssl) {
+    document.getElementById('imap_host').value = imapHost;
+    document.getElementById('imap_port').value = imapPort;
+    document.getElementById('smtp_host').value = smtpHost;
+    document.getElementById('smtp_port').value = smtpPort;
+    document.getElementById('smtp_use_ssl').checked = ssl;
+  }
+</script>
+</body>
+</html>

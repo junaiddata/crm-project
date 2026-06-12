@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'leads',
     'call_logs',
+    'emails',
 ]
 
 MIDDLEWARE = [

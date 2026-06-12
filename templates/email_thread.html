@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ counterpart_name|default:address }} — Email Thread</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #eef2f7;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+      color: #fff;
+      padding: 0 20px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+      z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .back-btn {
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.12); color: #fff; text-decoration: none;
+      transition: background 0.15s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.25); }
+    .avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13px; text-transform: uppercase;
+      background: rgba(255,255,255,0.18); color: #fff;
+    }
+    .header-info { min-width: 0; }
+    .header-title { font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-sub   { font-size: 11.5px; color: #93c5fd; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .header-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: rgba(255,255,255,0.9); text-decoration: none;
+      font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.1);
+      transition: all 0.15s; cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .header-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .header-btn.active { background: #fff; color: #1d4ed8; }
+
+    /* ── Select-mode bar ── */
+    .select-bar {
+      display: none;
+      background: #1e40af; color: #fff;
+      padding: 9px 20px; font-size: 12.5px; font-weight: 600;
+      align-items: center; justify-content: space-between; gap: 10px;
+      flex-shrink: 0;
+    }
+    .select-bar.open { display: flex; }
+    .select-bar .sb-actions { display: flex; gap: 8px; }
+    .sb-btn {
+      padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700;
+      border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .sb-add { background: #fff; color: #1d4ed8; }
+    .sb-add:hover:not(:disabled) { background: #dbeafe; }
+    .sb-add:disabled { opacity: 0.6; cursor: not-allowed; }
+    .sb-cancel { background: rgba(255,255,255,0.15); color: #fff; }
+    .sb-cancel:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Timeline ── */
+    .thread { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .day-divider {
+      align-self: center; background: #dbe4f0; color: #475569;
+      font-size: 11px; font-weight: 700; padding: 3px 14px; border-radius: 12px;
+    }
+    .msg-row { display: flex; gap: 8px; align-items: flex-start; }
+    .msg-row.out { justify-content: flex-end; }
+    .msg-check { margin-top: 16px; display: none; }
+    .select-mode .msg-row.in .msg-check { display: block; }
+
+    .email-card {
+      max-width: 72%;
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .msg-row.out .email-card { background: #dbeafe; }
+    .email-head {
+      padding: 9px 14px 0;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    }
+    .email-subject { font-size: 13px; font-weight: 700; color: #1e293b; word-break: break-word; }
+    .email-time { font-size: 10.5px; color: #94a3b8; white-space: nowrap; }
+    .email-body {
+      padding: 6px 14px 11px;
+      font-size: 13px; color: #334155; line-height: 1.65;
+      white-space: pre-wrap; word-break: break-word;
+      max-height: 320px; overflow-y: auto;
+    }
+    .email-atts { padding: 0 14px 11px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .att-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
+      text-decoration: none; transition: all 0.12s;
+    }
+    .att-link:hover { background: #dbeafe; }
+    .msg-row.out .att-link { background: #fff; }
+
+    /* ── Compose ── */
+    .compose {
+      flex-shrink: 0; background: #fff; border-top: 1px solid #e2e8f0;
+      padding: 12px 20px 14px;
+    }
+    .compose-inner {
+      border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .compose-inner:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .compose input[type=text] {
+      width: 100%; padding: 10px 14px; border: none; outline: none;
+      border-bottom: 1px solid #e2e8f0; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: #0f172a;
+    }
+    .compose textarea {
+      width: 100%; min-height: 64px; max-height: 200px; padding: 10px 14px;
+      resize: vertical; border: none; outline: none; font-family: inherit;
+      font-size: 13.5px; color: #0f172a; display: block;
+    }
+    .compose-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e2e8f0;
+    }
+    .compose-hint { font-size: 11.5px; color: #94a3b8; }
+    .btn-send {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .btn-send:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-send:disabled { opacity: 0.55; cursor: not-allowed; }
+    .compose-err {
+      font-size: 12px; color: #dc2626; background: #fef2f2;
+      border: 1px solid #fecaca; border-radius: 6px;
+      padding: 7px 12px; margin-top: 8px; display: none;
+    }
+
+    .empty-thread { text-align: center; color: #94a3b8; padding: 60px 20px; font-size: 14px; }
+
+    #toast {
+      position: fixed; bottom: 110px; right: 24px; z-index: 999;
+      padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      display: none; align-items: center; gap: 8px;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a href="/emails/" class="back-btn" title="Back to Email Manager">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+    </a>
+    <div class="avatar">{{ address|slice:":2" }}</div>
+    <div class="header-info">
+      <div class="header-title">{% if counterpart_name %}{{ counterpart_name }}{% else %}{{ address }}{% endif %}</div>
+      <div class="header-sub">{% if counterpart_name %}{{ address }} · {% endif %}{{ message_count }} email{{ message_count|pluralize }} received</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" id="select-toggle" onclick="toggleSelectMode()">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8.5 2a1.5 1.5 0 100 3h3a1.5 1.5 0 100-3h-3z"/><path d="M5 4.5A1.5 1.5 0 016.5 3 2.5 2.5 0 009 5.5h2A2.5 2.5 0 0013.5 3 1.5 1.5 0 0115 4.5v12A1.5 1.5 0 0113.5 18h-7A1.5 1.5 0 015 16.5v-12z"/></svg>
+      Add to Leads
+    </button>
+  </div>
+</header>
+
+<div class="select-bar" id="select-bar">
+  <span id="sb-count">Select the emails to add as lead items</span>
+  <div class="sb-actions">
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="addSelectedToLeads()" disabled>Add to Leads</button>
+    <button class="sb-btn sb-cancel" onclick="toggleSelectMode()">Cancel</button>
+  </div>
+</div>
+
+<div class="thread" id="thread">
+  {% if timeline %}
+    {% regroup timeline by time|date:"d M Y" as days %}
+    {% for day in days %}
+      <div class="day-divider">{{ day.grouper }}</div>
+      {% for m in day.list %}
+      <div class="msg-row {{ m.dir }}">
+        {% if m.dir == 'in' %}
+        <input type="checkbox" class="msg-check" data-id="{{ m.id }}" data-date="{{ m.date }}"
+               data-subject="{{ m.subject|escape }}" data-snippet="{{ m.body|truncatechars:120|escape }}"
+               onchange="updateSelectBar()">
+        {% endif %}
+        <div class="email-card">
+          <div class="email-head">
+            <div class="email-subject">{% if m.subject %}{{ m.subject }}{% else %}(no subject){% endif %}</div>
+            <div class="email-time">{{ m.time|date:"H:i" }}</div>
+          </div>
+          {% if m.body %}<div class="email-body">{{ m.body }}</div>{% else %}<div class="email-body" style="color:#94a3b8;">(no text)</div>{% endif %}
+          {% if m.attachments %}
+          <div class="email-atts">
+            {% for att in m.attachments %}
+            <a class="att-link" href="{{ att.file.url }}" target="_blank">📎 {{ att.filename }}</a>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% endfor %}
+  {% else %}
+    <div class="empty-thread">No emails with {{ address }} yet.</div>
+  {% endif %}
+</div>
+
+<div class="compose">
+  <div class="compose-inner">
+    <input type="text" id="subject" value="{{ reply_subject }}" placeholder="Subject…">
+    <textarea id="message" placeholder="Write your reply to {{ address }}…"></textarea>
+    <div class="compose-footer">
+      <span class="compose-hint">Sent from your sales mailbox · replies thread automatically</span>
+      <button class="btn-send" id="send-btn" onclick="sendMessage()">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
+  <div class="compose-err" id="compose-err"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const CSRF    = '{{ csrf_token }}';
+  const ADDRESS = '{{ address|escapejs }}';
+  const NAME    = '{{ counterpart_name|escapejs }}';
+
+  // Start scrolled to the newest message.
+  const threadEl = document.getElementById('thread');
+  threadEl.scrollTop = threadEl.scrollHeight;
+
+  async function sendMessage() {
+    const subjectEl = document.getElementById('subject');
+    const messageEl = document.getElementById('message');
+    const message = messageEl.value.trim();
+    if (!message) { messageEl.focus(); return; }
+
+    const btn = document.getElementById('send-btn');
+    const err = document.getElementById('compose-err');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    err.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/emails/thread/' + encodeURIComponent(ADDRESS) + '/send/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ subject: subjectEl.value.trim(), message }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        location.reload();
+        return;
+      }
+      err.textContent = data.error || 'Failed to send — check Email Settings.';
+      err.style.display = 'block';
+    } catch {
+      err.textContent = 'Network error — is the server running?';
+      err.style.display = 'block';
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg> Send';
+  }
+
+  document.getElementById('message').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
+  });
+
+  // ── Add to Leads (select mode) ──
+  function toggleSelectMode() {
+    const on = !document.body.classList.contains('select-mode');
+    document.body.classList.toggle('select-mode', on);
+    document.getElementById('select-bar').classList.toggle('open', on);
+    document.getElementById('select-toggle').classList.toggle('active', on);
+    if (!on) {
+      document.querySelectorAll('.msg-check').forEach(c => { c.checked = false; });
+      updateSelectBar();
+    }
+  }
+
+  function updateSelectBar() {
+    const n = document.querySelectorAll('.msg-check:checked').length;
+    document.getElementById('sb-count').textContent =
+      n ? n + ' email' + (n > 1 ? 's' : '') + ' selected' : 'Select the emails to add as lead items';
+    document.getElementById('sbAddBtn').disabled = !n;
+  }
+
+  async function addSelectedToLeads() {
+    const checked = [...document.querySelectorAll('.msg-check:checked')];
+    if (!checked.length) return;
+
+    let date = '';
+    const parts = [];
+    checked.forEach(c => {
+      const subject = c.dataset.subject || '(no subject)';
+      const snippet = c.dataset.snippet || '';
+      parts.push(snippet ? subject + ' — ' + snippet : subject);
+      if (c.dataset.date > date) date = c.dataset.date;
+    });
+
+    const btn = document.getElementById('sbAddBtn');
+    btn.disabled = true; btn.textContent = 'Adding…';
+
+    try {
+      const res = await fetch('/api/leads/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          date: date || new Date().toISOString().slice(0, 10),
+          emailId: ADDRESS,
+          name: NAME || '',
+          platform: 'Email',
+          items: parts.join('\n'),
+          dedupeByEmail: true,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.appended)       showToast('Added ' + data.added + ' email' + (data.added > 1 ? 's' : '') + ' to lead', '#1d4ed8');
+        else if (data.duplicate) showToast('Already in Leads — nothing new', '#d97706');
+        else                     showToast('Lead created', '#1d4ed8');
+        toggleSelectMode();
+      } else {
+        showToast('Failed to add lead', '#dc2626');
+      }
+    } catch {
+      showToast('Network error', '#dc2626');
+    }
+    btn.textContent = 'Add to Leads';
+    updateSelectBar();
+  }
+
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.style.cssText = 'display:flex;background:' + color + ';';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

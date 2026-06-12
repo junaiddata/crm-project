@@ -218,10 +218,47 @@ class LeadListCreateView(APIView):
                         status=status.HTTP_200_OK,
                     )
 
+        # When adding from Email: one lead per customer address per DAY (same
+        # append-or-create behaviour as WhatsApp, keyed on email instead).
+        if request.data.get('dedupeByEmail'):
+            email_addr = (request.data.get('emailId') or '').strip()
+            lead_date  = (request.data.get('date') or '').strip()
+            if email_addr:
+                lookup = Lead.objects.filter(email_id__iexact=email_addr)
+                if lead_date:
+                    lookup = lookup.filter(date=lead_date)
+                existing = lookup.first()
+                if existing:
+                    existing_lines = {l.strip() for l in existing.items.splitlines() if l.strip()}
+                    new_lines = (request.data.get('items') or '').splitlines()
+                    to_add = [l for l in new_lines if l.strip() and l.strip() not in existing_lines]
+
+                    if to_add:
+                        base = existing.items.rstrip('\n')
+                        addition = '\n'.join(to_add)
+                        existing.items = (base + '\n' + addition) if base else addition
+                        existing.save()
+                        serializer = LeadSerializer(existing, context={'request': request})
+                        return Response(
+                            {'appended': True, 'added': len(to_add), **serializer.data},
+                            status=status.HTTP_200_OK,
+                        )
+
+                    serializer = LeadSerializer(existing, context={'request': request})
+                    return Response(
+                        {'duplicate': True, 'added': 0, **serializer.data},
+                        status=status.HTTP_200_OK,
+                    )
+
         serializer = LeadSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            # Mark WhatsApp-originated leads so their number/date stay locked.
-            source = 'whatsapp' if request.data.get('dedupeBySender') else ''
+            # Mark auto-added leads so their identifying fields stay locked.
+            if request.data.get('dedupeBySender'):
+                source = 'whatsapp'
+            elif request.data.get('dedupeByEmail'):
+                source = 'email'
+            else:
+                source = ''
             serializer.save(source=source)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -239,9 +276,11 @@ class LeadDetailView(APIView):
     def patch(self, request, pk):
         lead = self.get_object(pk)
         data = request.data
-        # Number and date are locked for WhatsApp-sourced leads.
+        # Identifying fields are locked for auto-added leads.
         if lead.source == 'whatsapp':
             data = {k: v for k, v in data.items() if k not in ('date', 'mobileNo')}
+        elif lead.source == 'email':
+            data = {k: v for k, v in data.items() if k not in ('date', 'emailId')}
         serializer = LeadSerializer(lead, data=data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()

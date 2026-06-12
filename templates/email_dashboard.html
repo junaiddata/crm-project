@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Manager — CRM</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+      color: #fff;
+      padding: 0 28px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .header-sub   { font-size: 11.5px; color: #93c5fd; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-link {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      transition: all 0.15s; cursor: pointer; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ── Config warning banner ── */
+    .config-banner {
+      margin: 16px 28px 0; padding: 12px 18px;
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+      color: #92400e; font-size: 13px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .config-banner a { color: #b45309; font-weight: 700; }
+
+    /* ── Stats strip ── */
+    .stats-strip { display: flex; gap: 12px; padding: 20px 28px 0; }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px; flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+      transition: box-shadow 0.15s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
+    .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
+
+    /* ── Controls ── */
+    .controls { display: flex; align-items: center; gap: 10px; padding: 16px 28px; flex-wrap: wrap; }
+    .search-wrap {
+      display: flex; align-items: center; gap: 7px;
+      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+      padding: 0 12px; height: 38px; min-width: 260px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-wrap:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .search-wrap svg { color: #94a3b8; flex-shrink: 0; }
+    .search-wrap input {
+      border: none; outline: none; font-size: 13px; width: 100%;
+      background: transparent; color: #0f172a; font-family: inherit;
+    }
+    .search-wrap input::placeholder { color: #94a3b8; }
+
+    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tab {
+      padding: 6px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; color: #64748b; background: #fff;
+      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
+    }
+    .filter-tab:hover { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+    .filter-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .tab-count {
+      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+      margin-left: 4px; background: rgba(0,0,0,0.07); color: inherit;
+    }
+    .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
+
+    /* ── Feed ── */
+    .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
+
+    .conv-card {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+      overflow: hidden; transition: box-shadow 0.15s;
+      border-left: 4px solid #f59e0b;
+    }
+    .conv-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+    .conv-card.is-replied { border-left-color: #e2e8f0; }
+
+    .card-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 0; }
+    .sender-row { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 14px; text-transform: uppercase;
+      background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .conv-card.is-replied .avatar { background: #e2e8f0; color: #94a3b8; }
+    .sender-info { display: flex; flex-direction: column; gap: 1px; }
+    .sender-num {
+      font-size: 14.5px; font-weight: 700; color: #0f172a;
+      text-decoration: none; transition: color 0.12s;
+    }
+    .sender-num:hover { color: #2563eb; }
+    .sender-meta { font-size: 11.5px; color: #94a3b8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .msg-count-chip {
+      display: inline-flex; align-items: center;
+      background: #f1f5f9; color: #475569; border-radius: 4px;
+      padding: 1px 6px; font-size: 11px; font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .badge-new      { background: #fef3c7; color: #92400e; }
+    .badge-replied  { background: #dbeafe; color: #1e40af; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Message preview ── */
+    .card-messages { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
+    .msg-subject { font-size: 13px; font-weight: 700; color: #1e293b; }
+    .msg-bubble {
+      font-size: 13.5px; color: #334155; line-height: 1.6;
+      background: #f8fafc; border-radius: 0 8px 8px 8px;
+      padding: 9px 14px;
+      border-left: 3px solid #3b82f6;
+      word-break: break-word;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .conv-card.is-replied .msg-bubble { border-left-color: #e2e8f0; color: #64748b; background: #fafafa; }
+    .att-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      border-radius: 5px; padding: 1px 8px; font-size: 11px; font-weight: 600;
+    }
+
+    /* ── Action bar ── */
+    .card-actions {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 18px 14px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+    }
+    .action-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 13px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      border: 1px solid transparent; cursor: pointer; font-family: inherit;
+      transition: all 0.15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-view-chat  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .btn-view-chat:hover { background: #dbeafe; border-color: #93c5fd; }
+    .btn-reply      { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .btn-reply:hover { background: #1e40af; border-color: #1e40af; }
+    .btn-undo       { background: transparent; color: #94a3b8; border-color: #e2e8f0; }
+    .btn-undo:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+    /* ── Reply compose box ── */
+    .reply-box { display: none; padding: 0 18px 16px; }
+    .reply-box.open { display: block; }
+    .reply-box-inner {
+      background: #f8fafc; border: 1.5px solid #bfdbfe;
+      border-radius: 10px; overflow: hidden;
+    }
+    .reply-box-inner:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .reply-box input[type=text] {
+      width: 100%; padding: 9px 14px; border: none; outline: none;
+      border-bottom: 1px solid #e2e8f0; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: #0f172a; background: transparent;
+    }
+    .reply-box textarea {
+      width: 100%; min-height: 90px; padding: 10px 14px; resize: vertical;
+      border: none; outline: none; font-family: inherit;
+      font-size: 13.5px; color: #0f172a; background: transparent; display: block;
+    }
+    .reply-box-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: #eff6ff; border-top: 1px solid #bfdbfe;
+    }
+    .reply-placeholder-hint { font-size: 11.5px; color: #94a3b8; }
+    .reply-btns { display: flex; gap: 6px; }
+    .btn-send-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 16px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .btn-send-reply:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-send-reply:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .btn-cancel-reply:hover { background: #f1f5f9; }
+    .error-msg {
+      font-size: 12px; color: #dc2626; background: #fef2f2;
+      border: 1px solid #fecaca; border-radius: 6px;
+      padding: 7px 12px; margin-top: 8px; display: none;
+    }
+
+    /* ── Empty state ── */
+    .empty-wrap { flex: 1; padding: 0 28px 32px; }
+    .empty-state {
+      background: #fff; border-radius: 12px; text-align: center;
+      padding: 64px 20px; color: #94a3b8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .empty-state p { font-size: 14px; margin-top: 14px; }
+
+    footer {
+      padding: 14px 28px; text-align: center; font-size: 11.5px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    footer a { color: #2563eb; text-decoration: none; }
+    footer code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      display: none; align-items: center; gap: 8px;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Company Logo"
+         style="height:38px; object-fit:contain; max-width:130px; display:block; filter:brightness(0) invert(1);">
+    <div>
+      <div class="header-title">Email Manager</div>
+      <div class="header-sub">{% if cfg.email_address %}{{ cfg.email_address }} · {% endif %}{{ total }} email{{ total|pluralize }} · {{ unreplied }} pending</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-link" id="fetch-btn" onclick="fetchNow()">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+      Check mail now
+    </button>
+    <a href="/emails/settings/" class="header-link">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="/" class="header-link" style="background:rgba(255,255,255,0.22);">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      Home
+    </a>
+  </div>
+</header>
+
+{% if not cfg.is_configured or not cfg.enabled %}
+<div class="config-banner">
+  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+  <span>
+    {% if not cfg.is_configured %}Email integration is not configured yet —{% else %}Email integration is configured but disabled —{% endif %}
+    open <a href="/emails/settings/">Email Settings</a> to add the mailbox details and enable it.
+  </span>
+</div>
+{% endif %}
+
+<!-- Stats -->
+<div class="stats-strip">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;color:#1e40af;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ total }}</div>
+      <div class="stat-lbl">Total emails</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ unreplied }}</div>
+      <div class="stat-lbl">Needs reply</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+    </div>
+    <div>
+      <div class="stat-val">{{ replied_count }}</div>
+      <div class="stat-lbl">Replied</div>
+    </div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <form method="get" style="display:contents;">
+    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input name="q" value="{{ search }}" placeholder="Search by address, subject or text…" autocomplete="off">
+    </div>
+  </form>
+
+  <div class="filter-tabs">
+    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
+      All <span class="tab-count">{{ total }}</span>
+    </a>
+    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
+      Needs reply <span class="tab-count">{{ unreplied }}</span>
+    </a>
+    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}"
+       class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
+      Replied <span class="tab-count">{{ replied_count }}</span>
+    </a>
+  </div>
+
+  <div class="controls-right">{{ shown_count }} sender{{ shown_count|pluralize }} shown</div>
+</div>
+
+<!-- Email feed -->
+{% if groups %}
+<div class="feed">
+  {% for group in groups %}
+  {% with gid=group.reply_pk %}
+
+  <div class="conv-card {% if group.all_replied %}is-replied{% endif %}" id="card-{{ gid }}">
+
+    <div class="card-top">
+      <div class="sender-row">
+        <div class="avatar">{{ group.counterpart|slice:":2" }}</div>
+        <div class="sender-info">
+          <a class="sender-num" href="/emails/thread/{{ group.counterpart|urlencode }}/">
+            {% if group.counterpart_name %}{{ group.counterpart_name }}{% else %}{{ group.counterpart }}{% endif %}
+          </a>
+          <div class="sender-meta">
+            {% if group.counterpart_name %}{{ group.counterpart }} · {% endif %}{{ group.first_time|date:"d M Y · H:i" }}
+            {% if group.count > 1 %}<span class="msg-count-chip">{{ group.count }} emails</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      <span class="status-badge {% if group.all_replied %}badge-replied{% else %}badge-new{% endif %}" id="badge-{{ gid }}">
+        <span class="badge-dot" style="background:{% if group.all_replied %}#3b82f6{% else %}#f59e0b{% endif %};"></span>
+        {% if group.all_replied %}Replied{% else %}New{% endif %}
+      </span>
+    </div>
+
+    <!-- Latest email preview -->
+    <div class="card-messages">
+      {% with msg=group.latest %}
+      {% if msg.subject %}<div class="msg-subject">{{ msg.subject }}</div>{% endif %}
+      <div class="msg-bubble">{{ msg.body|default:"(no text)"|truncatechars:400 }}</div>
+      {% if msg.attachments.all %}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        {% for att in msg.attachments.all %}
+        <span class="att-chip">📎 {{ att.filename }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+    </div>
+
+    <!-- Action bar -->
+    <div class="card-actions" id="actions-{{ gid }}">
+      <a href="/emails/thread/{{ group.counterpart|urlencode }}/" class="action-btn btn-view-chat">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
+        View Thread
+      </a>
+      {% if group.any_unreplied %}
+      <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        Quick Reply
+      </button>
+      {% else %}
+      <button class="action-btn btn-undo" onclick="undoReply({{ gid }}, [{{ group.all_ids|join:',' }}])">↩ Mark as new</button>
+      {% endif %}
+    </div>
+
+    <!-- Reply compose -->
+    <div class="reply-box" id="reply-box-{{ gid }}">
+      <div class="reply-box-inner">
+        <input type="text" id="subject-{{ gid }}"
+               value="{% if group.latest.subject %}{% if group.latest.subject|slice:':3'|lower == 're:' %}{{ group.latest.subject }}{% else %}Re: {{ group.latest.subject }}{% endif %}{% endif %}"
+               placeholder="Subject…">
+        <textarea id="textarea-{{ gid }}" placeholder="Type your reply to {{ group.counterpart }}…"></textarea>
+        <div class="reply-box-footer">
+          <span class="reply-placeholder-hint">Sends a real email from your sales mailbox</span>
+          <div class="reply-btns">
+            <button class="btn-cancel-reply" onclick="closeReply({{ gid }})">Cancel</button>
+            <button class="btn-send-reply" id="send-btn-{{ gid }}"
+              onclick="sendReply({{ gid }}, '{{ group.counterpart|escapejs }}')">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+              Send Email
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="err-{{ gid }}"></div>
+    </div>
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-wrap">
+  <div class="empty-state">
+    <svg width="52" height="52" viewBox="0 0 20 20" fill="#cbd5e1"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+    <p>{% if search %}No emails match "{{ search }}"{% elif active_filter == 'unreplied' %}All caught up — no pending emails{% elif active_filter == 'replied' %}No replied emails yet{% else %}No emails yet — they appear automatically once the mailbox is configured{% endif %}</p>
+  </div>
+</div>
+{% endif %}
+
+<footer>
+  <a href="/">← Home</a> &nbsp;·&nbsp; <a href="/crm/">Leads Dashboard</a>
+  &nbsp;·&nbsp; <a href="/emails/settings/">Email Settings</a>
+  &nbsp;·&nbsp; Fetch: <code>manage.py fetch_emails</code> (cron every 3–5 min)
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  const CSRF = '{{ csrf_token }}';
+
+  function openReply(id) {
+    document.getElementById('reply-box-' + id).classList.add('open');
+    document.getElementById('textarea-' + id).focus();
+  }
+
+  function closeReply(id) {
+    document.getElementById('reply-box-' + id).classList.remove('open');
+    document.getElementById('textarea-' + id).value = '';
+    document.getElementById('err-' + id).style.display = 'none';
+  }
+
+  async function sendReply(id, address) {
+    const textarea = document.getElementById('textarea-' + id);
+    const message  = textarea.value.trim();
+    const subject  = document.getElementById('subject-' + id).value.trim();
+    if (!message) { textarea.focus(); return; }
+
+    const btn = document.getElementById('send-btn-' + id);
+    const err = document.getElementById('err-' + id);
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    err.style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/emails/thread/' + encodeURIComponent(address) + '/send/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ subject, message }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        showToast('Email sent to ' + address, '#2563eb');
+        setTimeout(() => location.reload(), 700);
+      } else {
+        err.textContent = data.error || 'Failed to send — check Email Settings.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Send Email';
+      }
+    } catch {
+      err.textContent = 'Network error — is the server running?';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send Email';
+    }
+  }
+
+  async function undoReply(id, allIds) {
+    const alsoMarkIds = (allIds || []).filter(i => i !== id);
+    const res = await fetch('/api/emails/' + id + '/mark/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ undo: true, also_mark_ids: alsoMarkIds }),
+    });
+    if (res.ok) location.reload();
+  }
+
+  async function fetchNow() {
+    const btn = document.getElementById('fetch-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      const res  = await fetch('/api/emails/fetch-now/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+      });
+      const data = await res.json();
+      if (data.new > 0) {
+        showToast(data.new + ' new email' + (data.new > 1 ? 's' : ''), '#2563eb');
+        setTimeout(() => location.reload(), 700);
+      } else {
+        showToast(data.info || 'No new emails', '#64748b');
+      }
+    } catch {
+      showToast('Fetch failed — check the server', '#dc2626');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg> Check mail now';
+  }
+
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.style.cssText = 'display:flex;background:' + color + ';';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

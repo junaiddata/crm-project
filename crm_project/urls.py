@@ -7,6 +7,7 @@ from django.http import FileResponse, Http404
 
 from leads.views import whatsapp_dashboard, mark_replied, whatsapp_chat
 from call_logs.views import calls_dashboard, call_leads_dashboard
+from emails.views import email_dashboard, email_thread, email_settings_page
 
 
 APK_PATH = settings.BASE_DIR / 'downloads' / 'CallTracker.apk'
@@ -38,12 +39,16 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('leads.urls')),
     path('api/', include('call_logs.urls')),
+    path('api/', include('emails.urls')),
     path('crm/', crm_index, name='crm'),
     path('download/', download_page, name='download'),
     path('download/app/', download_apk, name='download-apk'),
     path('whatsapp/', whatsapp_dashboard, name='whatsapp-dashboard'),
     path('whatsapp/<int:pk>/reply/', mark_replied, name='mark-replied'),
     path('whatsapp/chat/<str:sender>/', whatsapp_chat, name='whatsapp-chat'),
+    path('emails/', email_dashboard, name='email-dashboard'),
+    path('emails/settings/', email_settings_page, name='email-settings'),
+    path('emails/thread/<str:address>/', email_thread, name='email-thread'),
     path('calls/', calls_dashboard, name='calls-dashboard'),
     path('call-leads/', call_leads_dashboard, name='call-leads'),
     path('', landing, name='home'),
