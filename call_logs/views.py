@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -89,6 +90,7 @@ class CallLogListView(APIView):
 
 # ── Calls dashboard ───────────────────────────────────────────────────────────
 
+@login_required
 def calls_dashboard(request):
     today = timezone.now().date()
 
@@ -133,6 +135,7 @@ def calls_dashboard(request):
 
 # ── Call Leads dashboard ──────────────────────────────────────────────────────
 
+@login_required
 def call_leads_dashboard(request):
     tab       = request.GET.get('tab', 'active')
     from_date = request.GET.get('from_date', '').strip()
@@ -171,6 +174,7 @@ def call_leads_dashboard(request):
 
 # ── AJAX endpoints for Call Leads ─────────────────────────────────────────────
 
+@login_required
 @csrf_exempt
 def update_call_lead(request, pk):
     lead = get_object_or_404(CallLead, pk=pk)
@@ -211,6 +215,7 @@ def update_call_lead(request, pk):
     return JsonResponse({'ok': False}, status=405)
 
 
+@login_required
 @csrf_exempt
 @require_POST
 def toggle_return_called(request, pk):
@@ -221,6 +226,7 @@ def toggle_return_called(request, pk):
     return JsonResponse({'ok': True, 'return_called': lead.return_called})
 
 
+@login_required
 @csrf_exempt
 @require_POST
 def set_lead_status(request, pk):

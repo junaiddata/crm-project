@@ -4,6 +4,7 @@ import logging
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import EmailLog, EmailSettings
@@ -48,6 +49,7 @@ def _threads_by_counterpart(qs):
     return result
 
 
+@login_required
 def email_dashboard(request):
     cfg = EmailSettings.load()
     base = EmailLog.objects.filter(direction='in')
@@ -86,6 +88,7 @@ def email_dashboard(request):
 
 # ── Per-address thread ────────────────────────────────────────────────────────
 
+@login_required
 def email_thread(request, address):
     address = address.strip().lower()
     msgs = list(EmailLog.objects.filter(counterpart=address).order_by('received_at'))
@@ -119,6 +122,7 @@ def email_thread(request, address):
     })
 
 
+@login_required
 @csrf_exempt
 def email_thread_send(request, address):
     if request.method != 'POST':
@@ -163,6 +167,7 @@ def email_thread_send(request, address):
     return JsonResponse({'error': error or 'Failed to send'}, status=502)
 
 
+@login_required
 @csrf_exempt
 def email_mark(request, pk):
     """Flip replied/new on an inbound email (plus optional extra ids) without sending."""
@@ -181,6 +186,7 @@ def email_mark(request, pk):
     return JsonResponse({'ok': True})
 
 
+@login_required
 @csrf_exempt
 def email_fetch_now(request):
     """Manual 'Check mail now' from the dashboard (cron does this automatically on the VPS)."""
@@ -200,6 +206,7 @@ PROVIDER_PRESETS = [
 ]
 
 
+@login_required
 def email_settings_page(request):
     cfg = EmailSettings.load()
     saved = False

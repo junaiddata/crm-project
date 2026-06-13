@@ -4,6 +4,7 @@ import json
 import logging
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -134,6 +135,7 @@ def whatsapp_webhook(request):
     return JsonResponse({'ok': True})
 
 
+@login_required
 @csrf_exempt
 def whatsapp_reply(request, pk):
     if request.method != 'POST':
@@ -374,6 +376,7 @@ def _conversations_by_sender(qs):
     return result
 
 
+@login_required
 def whatsapp_dashboard(request):
     base = WhatsAppLead.objects.all()
 
@@ -423,6 +426,7 @@ def whatsapp_dashboard(request):
     })
 
 
+@login_required
 def mark_replied(request, pk):
     from django.http import HttpResponseRedirect
     from django.views.decorators.http import require_POST as rp
@@ -443,6 +447,7 @@ def mark_replied(request, pk):
 
 # ── Per-sender chat thread ────────────────────────────────────────────────────
 
+@login_required
 def whatsapp_chat(request, sender):
     from datetime import timedelta
 
@@ -523,6 +528,7 @@ def _business_phone_id_for(sender):
     return lead.business_phone_id if lead else ''
 
 
+@login_required
 @csrf_exempt
 def whatsapp_chat_send(request, sender):
     if request.method != 'POST':
@@ -555,6 +561,7 @@ def whatsapp_chat_send(request, sender):
     return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
 
 
+@login_required
 @csrf_exempt
 def whatsapp_chat_send_media(request, sender):
     if request.method != 'POST':
