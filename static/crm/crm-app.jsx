@@ -23,6 +23,35 @@ function CrmApp() {
       .catch(() => { setLoading(false); showToast('Failed to load leads', 'error'); });
   }, []);
 
+  // Handle "Add to Leads" handoff from the Email dashboard: it sends the message
+  // over as query params. Create (or append to) the lead, then clean the URL.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('addLead') !== '1') return;
+    window.history.replaceState({}, '', window.location.pathname);
+
+    createLead({
+      date: params.get('date') || todayISO(),
+      emailId: params.get('email') || '',
+      name: params.get('name') || '',
+      platform: params.get('platform') || 'Email',
+      items: params.get('items') || '',
+      dedupeByEmail: true,
+    })
+      .then(lead => {
+        setLeads(prev => prev.some(l => l.id === lead.id)
+          ? prev.map(l => l.id === lead.id ? lead : l)
+          : [lead, ...prev]);
+        setView('table');
+        showToast(
+          lead.appended ? 'Added ' + lead.added + ' message to existing lead'
+          : lead.duplicate ? 'Already in Leads — nothing new'
+          : 'Lead created from email',
+          'success');
+      })
+      .catch(() => showToast('Failed to add lead from email', 'error'));
+  }, []);
+
   // --- CRUD ---
   async function addLead() {
     try {

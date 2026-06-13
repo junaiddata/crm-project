@@ -171,6 +171,8 @@
     }
     .btn-view-chat  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
     .btn-view-chat:hover { background: #dbeafe; border-color: #93c5fd; }
+    .btn-add-lead   { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .btn-add-lead:hover { background: #d1fae5; border-color: #6ee7b7; }
     .btn-reply      { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
     .btn-reply:hover { background: #1e40af; border-color: #1e40af; }
     .btn-undo       { background: transparent; color: #94a3b8; border-color: #e2e8f0; }
@@ -285,37 +287,6 @@
 </div>
 {% endif %}
 
-<!-- Stats -->
-<div class="stats-strip">
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#dbeafe;color:#1e40af;">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ total }}</div>
-      <div class="stat-lbl">Total emails</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ unreplied }}</div>
-      <div class="stat-lbl">Needs reply</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ replied_count }}</div>
-      <div class="stat-lbl">Replied</div>
-    </div>
-  </div>
-</div>
-
 <!-- Controls -->
 <div class="controls">
   <form method="get" style="display:contents;">
@@ -392,6 +363,15 @@
         <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
         View Thread
       </a>
+      <button class="action-btn btn-add-lead" onclick="addToLeads(this)"
+        data-email="{{ group.counterpart }}"
+        data-name="{{ group.counterpart_name }}"
+        data-date="{{ group.latest.received_at|date:'Y-m-d' }}"
+        data-subject="{{ group.latest.subject }}"
+        data-body="{{ group.latest.body|truncatechars:1500 }}">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 00-6 6 1 1 0 001 1h10a1 1 0 001-1 6 6 0 00-6-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+        Add to Leads
+      </button>
       {% if group.any_unreplied %}
       <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
         <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
@@ -447,6 +427,23 @@
 
 <script>
   const CSRF = '{{ csrf_token }}';
+
+  // Send this email over to the Leads page (same destination as WhatsApp leads),
+  // carrying the message as query params so the CRM can prefill the new lead.
+  function addToLeads(btn) {
+    const subject = (btn.dataset.subject || '').trim();
+    const body    = (btn.dataset.body || '').trim();
+    const items   = subject ? (body ? subject + '\n' + body : subject) : body;
+    const params  = new URLSearchParams({
+      addLead: '1',
+      platform: 'Email',
+      email: btn.dataset.email || '',
+      name: btn.dataset.name || '',
+      date: btn.dataset.date || '',
+      items: items,
+    });
+    window.location.href = '/crm/?' + params.toString();
+  }
 
   function openReply(id) {
     document.getElementById('reply-box-' + id).classList.add('open');
