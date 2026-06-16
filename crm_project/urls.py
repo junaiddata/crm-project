@@ -7,7 +7,7 @@ from django.conf.urls.static import static
 from django.shortcuts import render
 from django.http import FileResponse, Http404
 
-from leads.views import whatsapp_dashboard, mark_replied, whatsapp_chat
+from leads.views import whatsapp_dashboard, mark_replied, whatsapp_chat, whatsapp_broadcast
 from call_logs.views import calls_dashboard, call_leads_dashboard
 from emails.views import email_dashboard, email_thread, email_settings_page
 
@@ -49,6 +49,7 @@ urlpatterns = [
     path('download/', download_page, name='download'),
     path('download/app/', download_apk, name='download-apk'),
     path('whatsapp/', whatsapp_dashboard, name='whatsapp-dashboard'),
+    path('whatsapp/broadcast/', whatsapp_broadcast, name='whatsapp-broadcast'),
     path('whatsapp/<int:pk>/reply/', mark_replied, name='mark-replied'),
     path('whatsapp/chat/<str:sender>/', whatsapp_chat, name='whatsapp-chat'),
     path('emails/', email_dashboard, name='email-dashboard'),

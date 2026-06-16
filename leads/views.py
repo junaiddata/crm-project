@@ -445,6 +445,92 @@ def mark_replied(request, pk):
     return HttpResponseRedirect(next_url)
 
 
+# ── Broadcast page (send an approved template to a CSV of numbers) ─────────────
+@login_required
+def whatsapp_broadcast(request):
+    from .broadcast import (
+        DEFAULT_PHONE_ID, parse_numbers, send_broadcast,
+        stage_chat_image, upload_header_image,
+    )
+
+    labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    numbers_choices = [{'id': pid, 'label': labels.get(pid, pid)} for pid in id_order]
+
+    ctx = {
+        'numbers_choices': numbers_choices,
+        'default_phone_id': DEFAULT_PHONE_ID,
+        'template': 'plumbing_marketing',
+        'language': 'en',
+    }
+
+    if request.method != 'POST':
+        return render(request, 'whatsapp_broadcast.html', ctx)
+
+    template = request.POST.get('template', '').strip()
+    language = request.POST.get('language', 'en').strip() or 'en'
+    phone_id = request.POST.get('phone_id', '').strip() or DEFAULT_PHONE_ID
+    caption  = request.POST.get('caption', '').strip()
+    csv_file = request.FILES.get('csv')
+    image    = request.FILES.get('image')
+
+    # Preserve what the user typed so the form repopulates on error.
+    ctx.update({'template': template, 'language': language,
+                'caption': caption, 'selected_phone_id': phone_id})
+
+    if not template:
+        ctx['error'] = 'Template name is required.'
+        return render(request, 'whatsapp_broadcast.html', ctx)
+    if not csv_file:
+        ctx['error'] = 'Please upload a CSV file of recipient numbers.'
+        return render(request, 'whatsapp_broadcast.html', ctx)
+
+    try:
+        raw = csv_file.read().decode('utf-8-sig')
+    except (UnicodeDecodeError, ValueError):
+        ctx['error'] = 'Could not read the CSV file — make sure it is a plain CSV/text file.'
+        return render(request, 'whatsapp_broadcast.html', ctx)
+
+    recipients = parse_numbers(raw)
+    if not recipients:
+        ctx['error'] = 'No valid phone numbers found in the first column of the CSV.'
+        return render(request, 'whatsapp_broadcast.html', ctx)
+
+    # Resolve the optional header image: upload to Meta + stage for the chat thread.
+    header_image_id = chat_media_name = None
+    if image:
+        mime_type = image.content_type or 'application/octet-stream'
+        if not mime_type.startswith('image/'):
+            ctx['error'] = 'The header file must be an image (JPG or PNG).'
+            return render(request, 'whatsapp_broadcast.html', ctx)
+        img_bytes = image.read()
+        header_image_id = upload_header_image(img_bytes, mime_type, image.name, phone_id)
+        if not header_image_id:
+            ctx['error'] = 'Failed to upload the image to WhatsApp — check API credentials and try again.'
+            return render(request, 'whatsapp_broadcast.html', ctx)
+        chat_media_name = stage_chat_image(img_bytes, image.name)
+
+    result = send_broadcast(
+        recipients,
+        template=template,
+        language=language,
+        phone_id=phone_id,
+        caption=caption or None,
+        header_image_id=header_image_id,
+        chat_media_name=chat_media_name,
+    )
+
+    ctx['result'] = {
+        'total': len(recipients),
+        'sent': result['sent'],
+        'failed': result['failed'],
+        'errors': result['errors'][:20],
+        'more_errors': max(0, len(result['errors']) - 20),
+        'label': labels.get(phone_id, phone_id),
+    }
+    return render(request, 'whatsapp_broadcast.html', ctx)
+
+
 # ── Per-sender chat thread ────────────────────────────────────────────────────
 
 @login_required
