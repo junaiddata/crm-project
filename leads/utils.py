@@ -72,6 +72,74 @@ def send_whatsapp_reply(to_number, message_text, phone_number_id=None):
         return False
 
 
+def send_whatsapp_template(to_number, template_name, language='en',
+                           header_image_url=None, header_image_id=None,
+                           body_params=None, phone_number_id=None):
+    """Send an approved WhatsApp template message.
+
+    Templates are required to open a conversation outside the 24-hour customer
+    service window (i.e. for marketing broadcasts).
+
+    - header_image_url / header_image_id: for templates whose HEADER is an image.
+      Pass either a public URL (link) or an already-uploaded media id.
+    - body_params: list of strings for {{1}}, {{2}}, … in the template body.
+
+    Returns the Meta message id (str) on success, or None on failure.
+    """
+    api_url      = _messages_url(phone_number_id)
+    access_token = _token()
+
+    if not api_url or not access_token:
+        logger.error('No send URL (missing phone number ID) or WHATSAPP_ACCESS_TOKEN not set')
+        return None
+
+    components = []
+
+    if header_image_url or header_image_id:
+        image_obj = {'link': header_image_url} if header_image_url else {'id': header_image_id}
+        components.append({
+            'type': 'header',
+            'parameters': [{'type': 'image', 'image': image_obj}],
+        })
+
+    if body_params:
+        components.append({
+            'type': 'body',
+            'parameters': [{'type': 'text', 'text': str(p)} for p in body_params],
+        })
+
+    template = {
+        'name': template_name,
+        'language': {'code': language},
+    }
+    if components:
+        template['components'] = components
+
+    payload = {
+        'messaging_product': 'whatsapp',
+        'to': to_number,
+        'type': 'template',
+        'template': template,
+    }
+
+    try:
+        resp = requests.post(
+            api_url,
+            json=payload,
+            headers={'Authorization': f'Bearer {access_token}', 'Content-Type': 'application/json'},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        msg_id = (resp.json().get('messages') or [{}])[0].get('id')
+        logger.info(f'WhatsApp template "{template_name}" sent to {to_number} ({msg_id})')
+        return msg_id
+    except requests.exceptions.RequestException as e:
+        logger.error(f'WhatsApp template send error to {to_number}: {e}')
+        if getattr(e, 'response', None) is not None:
+            logger.error(f'Meta API response: {e.response.text}')
+        return None
+
+
 def upload_whatsapp_media(file_bytes, mime_type, filename, phone_number_id=None):
     """Upload file to Meta and return media_id, or None on failure."""
     upload_url   = _media_upload_url(phone_number_id)
