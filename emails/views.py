@@ -1,10 +1,12 @@
 import json
 import logging
+from datetime import datetime, timedelta
 
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import EmailLog, EmailSettings
@@ -68,9 +70,32 @@ def email_dashboard(request):
             | Q(subject__icontains=search) | Q(body__icontains=search)
         )
 
+    # Date-range filter (inclusive). Parsed from yyyy-mm-dd <input type=date> values.
+    date_from = request.GET.get('from', '').strip()
+    date_to   = request.GET.get('to', '').strip()
+
+    def _parse(d):
+        try:
+            return datetime.strptime(d, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+
+    pf, pt = _parse(date_from), _parse(date_to)
+    if pf:
+        qs = qs.filter(received_at__date__gte=pf)
+    if pt:
+        qs = qs.filter(received_at__date__lte=pt)
+
     total     = base.count()
     unreplied = base.filter(replied=False).count()
     replied   = base.filter(replied=True).count()
+
+    # Time-based stats over all inbound mail.
+    now         = timezone.localtime()
+    today       = now.date()
+    week_start  = today - timedelta(days=today.weekday())  # Monday
+    today_count = base.filter(received_at__date=today).count()
+    week_count  = base.filter(received_at__date__gte=week_start).count()
 
     groups = _threads_by_counterpart(qs)
 
@@ -79,9 +104,13 @@ def email_dashboard(request):
         'shown_count': len(groups),
         'active_filter': active_filter,
         'search': search,
+        'date_from': date_from if pf else '',
+        'date_to': date_to if pt else '',
         'total': total,
         'unreplied': unreplied,
         'replied_count': replied,
+        'today_count': today_count,
+        'week_count': week_count,
         'cfg': cfg,
     })
 

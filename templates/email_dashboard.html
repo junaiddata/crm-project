@@ -93,6 +93,29 @@
     }
     .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
 
+    /* ── Date range filter ── */
+    .date-filter {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+      padding: 0 10px; height: 38px;
+    }
+    .date-filter-lbl { font-size: 11.5px; font-weight: 600; color: #64748b; }
+    .date-filter input[type=date] {
+      border: none; outline: none; font-family: inherit; font-size: 12.5px;
+      color: #0f172a; background: transparent; height: 24px;
+    }
+    .date-apply {
+      padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      background: #1d4ed8; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .date-apply:hover { background: #1e40af; }
+    .date-clear {
+      font-size: 12px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; padding: 0 4px;
+    }
+    .date-clear:hover { color: #ef4444; }
+
     /* ── Feed ── */
     .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
 
@@ -287,10 +310,55 @@
 </div>
 {% endif %}
 
+<!-- Stats strip -->
+<div class="stats-strip">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;color:#1d4ed8;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+    </div>
+    <div><div class="stat-val">{{ total }}</div><div class="stat-lbl">Total emails</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;color:#15803d;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+    </div>
+    <div><div class="stat-val">{{ today_count }}</div><div class="stat-lbl">Today</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+    </div>
+    <div><div class="stat-val">{{ week_count }}</div><div class="stat-lbl">This week</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#b45309;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+    </div>
+    <div><div class="stat-val">{{ unreplied }}</div><div class="stat-lbl">Needs reply</div></div>
+  </div>
+</div>
+
 <!-- Controls -->
 <div class="controls">
   <form method="get" style="display:contents;">
     {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+    <div class="date-filter">
+      <span class="date-filter-lbl">From</span>
+      <input type="date" name="from" value="{{ date_from }}">
+      <span class="date-filter-lbl">To</span>
+      <input type="date" name="to" value="{{ date_to }}">
+      <button type="submit" class="date-apply">Apply</button>
+      {% if date_from or date_to %}
+      <a href="?{% if active_filter != 'all' %}filter={{ active_filter }}&{% endif %}{% if search %}q={{ search }}{% endif %}" class="date-clear">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <form method="get" style="display:contents;">
+    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
+    {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
     <div class="search-wrap">
       <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
       <input name="q" value="{{ search }}" placeholder="Search by address, subject or text…" autocomplete="off">
@@ -298,15 +366,15 @@
   </form>
 
   <div class="filter-tabs">
-    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
       All <span class="tab-count">{{ total }}</span>
     </a>
-    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
       Needs reply <span class="tab-count">{{ unreplied }}</span>
     </a>
-    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}"
+    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
       Replied <span class="tab-count">{{ replied_count }}</span>
     </a>
