@@ -20,6 +20,9 @@ class WhatsAppLead(models.Model):
     media_file  = models.FileField(upload_to='whatsapp_inbound/', blank=True, null=True)
     media_name  = models.CharField(max_length=255, blank=True)
     received_at = models.DateTimeField(auto_now_add=True)
+    # Whether we've *opened/seen* this message (WhatsApp-style unread), separate
+    # from `replied` (whether we've answered it).
+    read        = models.BooleanField(default=False)
     replied     = models.BooleanField(default=False)
     reply_text  = models.TextField(blank=True)
 

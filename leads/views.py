@@ -408,6 +408,7 @@ def _wa_conversations(qs):
         c = convs[key]
         msgs, latest = c['messages'], c['latest']
         sender, pid = key
+        unread_count = sum(1 for m in msgs if not m.read)
         result.append({
             'sender': sender,
             'business_phone_id': pid,
@@ -417,8 +418,8 @@ def _wa_conversations(qs):
             'preview': _wa_preview(latest),
             'first_time': latest.received_at,
             'count': len(msgs),
-            'unread': any(not m.replied for m in msgs),
-            'all_replied': all(m.replied for m in msgs),
+            'unread_count': unread_count,   # how many messages are still unread (to read)
+            'unread': unread_count > 0,
         })
     return result
 
@@ -435,17 +436,23 @@ def whatsapp_dashboard(request):
 
     qs = number_base
     active_filter = request.GET.get('filter', 'all')
-    if active_filter == 'unreplied':
-        qs = qs.filter(replied=False)
+    if active_filter == 'unread':
+        # show only conversations that still have unread messages
+        unread_senders = (number_base.filter(read=False)
+                          .values_list('sender', 'business_phone_id'))
+        unread_keys = set(unread_senders)
+        # fall through; we filter the built conversations below by these keys
+    else:
+        unread_keys = None
 
     search = request.GET.get('q', '').strip()
     if search:
         qs = qs.filter(Q(sender__icontains=search) | Q(text_body__icontains=search)
                        | Q(sender_name__icontains=search))
 
-    # Reply/total counts respect the selected number
-    total     = number_base.count()
-    unreplied = number_base.filter(replied=False).count()
+    # Counts respect the selected number. "unread" = messages not yet opened.
+    total  = number_base.count()
+    unread = number_base.filter(read=False).count()
 
     # Per-number chips (independent of the reply filter)
     labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
@@ -456,6 +463,9 @@ def whatsapp_dashboard(request):
     ]
 
     conversations = _wa_conversations(qs)
+    if unread_keys is not None:
+        conversations = [c for c in conversations
+                         if (c['sender'], c['business_phone_id']) in unread_keys]
 
     return render(request, 'whatsapp_dashboard.html', {
         'conversations': conversations,
@@ -466,7 +476,7 @@ def whatsapp_dashboard(request):
         'all_count': base.count(),
         'search': search,
         'total': total,
-        'unreplied': unreplied,
+        'unread': unread,
         'open_sender': request.GET.get('open', ''),
         'open_number': request.GET.get('open_number', ''),
     })
@@ -655,11 +665,16 @@ def whatsapp_chat(request, sender):
 
     # Scope the thread to the active number (fall back to everything for legacy data).
     if active_number:
-        incoming = list(all_incoming.filter(business_phone_id=active_number).order_by('received_at'))
+        thread_in = all_incoming.filter(business_phone_id=active_number)
         outbound = list(WhatsAppOutbound.objects.filter(recipient=sender, business_phone_id=active_number).order_by('sent_at'))
     else:
-        incoming = list(all_incoming.order_by('received_at'))
+        thread_in = all_incoming
         outbound = list(WhatsAppOutbound.objects.filter(recipient=sender).order_by('sent_at'))
+
+    # Opening the conversation = reading it (WhatsApp-style). Mark its inbound
+    # messages seen so the unread badge clears and stays cleared after refresh.
+    thread_in.filter(read=False).update(read=True)
+    incoming = list(thread_in.order_by('received_at'))
 
     timeline = []
     for msg in incoming:
