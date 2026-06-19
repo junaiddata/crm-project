@@ -34,17 +34,39 @@ def _aware(dt):
     return dt or timezone.now()
 
 
+RETENTION_DAYS = 90
+
+
+def purge_old_emails(days=RETENTION_DAYS):
+    """Delete EmailLog rows (and their attachment files) older than `days`.
+
+    Keeps storage from growing without bound. Django cascades the attachment
+    rows on delete but does NOT remove the FileField files from disk, so we
+    delete those first. Returns the number of EmailLog rows removed.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    old = EmailLog.objects.filter(received_at__lt=cutoff)
+    for att in EmailAttachment.objects.filter(email__in=old):
+        att.file.delete(save=False)  # remove file from storage, not the row
+    _, by_model = old.delete()
+    return by_model.get('emails.EmailLog', 0)
+
+
 def fetch_emails(limit=500):
     """Pull new messages from the IMAP inbox into EmailLog.
 
     Returns (new_count, info). Re-scans a 1-day window before the newest stored
-    message; the unique Message-ID makes the overlap harmless.
+    message; the unique Message-ID makes the overlap harmless. Each run also
+    purges mail older than RETENTION_DAYS to cap storage.
     """
     cfg = EmailSettings.load()
     if not cfg.enabled:
         return 0, 'Email integration is disabled — enable it in Email Settings'
     if not cfg.is_configured:
         return 0, 'Email integration is not configured — fill in Email Settings'
+
+    purged = purge_old_emails()
+    purged_note = f', purged {purged} old' if purged else ''
 
     from imap_tools import AND, MailBox
 
@@ -83,9 +105,9 @@ def fetch_emails(limit=500):
 
             if not new_uids:
                 cfg.last_fetch_at = timezone.now()
-                cfg.last_fetch_info = 'OK — 0 new message(s)'
+                cfg.last_fetch_info = f'OK — 0 new message(s){purged_note}'
                 cfg.save(update_fields=['last_fetch_at', 'last_fetch_info'])
-                return 0, 'Fetched 0 new message(s)'
+                return 0, f'Fetched 0 new message(s){purged_note}'
 
             for msg in mailbox.fetch(AND(uid=new_uids), mark_seen=False, bulk=True):
                 from_addr = (msg.from_ or '').strip().lower()
@@ -135,9 +157,9 @@ def fetch_emails(limit=500):
         return 0, f'Fetch failed: {exc}'
 
     cfg.last_fetch_at = timezone.now()
-    cfg.last_fetch_info = f'OK — {new_count} new message(s)'
+    cfg.last_fetch_info = f'OK — {new_count} new message(s){purged_note}'
     cfg.save(update_fields=['last_fetch_at', 'last_fetch_info'])
-    return new_count, f'Fetched {new_count} new message(s)'
+    return new_count, f'Fetched {new_count} new message(s){purged_note}'
 
 
 def _smtp_connect(cfg, timeout=30):
