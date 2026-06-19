@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import logging
+import threading
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -16,7 +17,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import Lead, WhatsAppLead, WhatsAppOutbound
+from .models import BroadcastJob, Lead, WhatsAppLead, WhatsAppOutbound
 from .serializers import LeadSerializer
 
 logger = logging.getLogger(__name__)
@@ -491,12 +492,53 @@ def mark_replied(request, pk):
 
 
 # ── Broadcast page (send an approved template to a CSV of numbers) ─────────────
+
+def _broadcast_worker(job_id, recipients, *, template, language, phone_id, caption,
+                      image_bytes, image_mime, image_name):
+    """Run the broadcast off the request thread, updating the BroadcastJob row as
+    it goes. Sending 100+ template messages is one API call each (no bulk
+    endpoint), so it must not block the HTTP request or nginx returns a 504."""
+    from django.db import connections
+    from .broadcast import send_broadcast, stage_chat_image, upload_header_image
+
+    try:
+        header_image_id = chat_media_name = None
+        if image_bytes:
+            header_image_id = upload_header_image(image_bytes, image_mime, image_name, phone_id)
+            if not header_image_id:
+                BroadcastJob.objects.filter(pk=job_id).update(
+                    status='error',
+                    message='Failed to upload the header image to WhatsApp — check API credentials.')
+                return
+            chat_media_name = stage_chat_image(image_bytes, image_name)
+
+        counts = {'sent': 0, 'failed': 0}
+
+        def progress(i, number, ok):
+            counts['sent' if ok else 'failed'] += 1
+            BroadcastJob.objects.filter(pk=job_id).update(
+                sent=counts['sent'], failed=counts['failed'])
+
+        result = send_broadcast(
+            recipients, template=template, language=language, phone_id=phone_id,
+            caption=caption or None, header_image_id=header_image_id,
+            chat_media_name=chat_media_name, on_progress=progress,
+        )
+        BroadcastJob.objects.filter(pk=job_id).update(
+            status='done', sent=result['sent'], failed=result['failed'],
+            errors='\n'.join(result['errors']),
+            message=f"{result['sent']} of {len(recipients)} delivered to the API"
+                    + (f" · {result['failed']} failed" if result['failed'] else ''))
+    except Exception as exc:  # noqa: BLE001 — record any failure on the job
+        logger.exception('Broadcast job %s failed', job_id)
+        BroadcastJob.objects.filter(pk=job_id).update(status='error', message=str(exc)[:255])
+    finally:
+        connections.close_all()  # threads get their own DB connection — release it
+
+
 @login_required
 def whatsapp_broadcast(request):
-    from .broadcast import (
-        DEFAULT_PHONE_ID, parse_numbers, send_broadcast,
-        stage_chat_image, upload_header_image,
-    )
+    from .broadcast import DEFAULT_PHONE_ID, parse_numbers
 
     labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
     id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
@@ -541,39 +583,48 @@ def whatsapp_broadcast(request):
         ctx['error'] = 'No valid phone numbers found in the first column of the CSV.'
         return render(request, 'whatsapp_broadcast.html', ctx)
 
-    # Resolve the optional header image: upload to Meta + stage for the chat thread.
-    header_image_id = chat_media_name = None
+    # Read the optional header image now (in the request); the actual Meta upload
+    # happens in the worker so a slow upload doesn't block the response.
+    image_bytes = image_mime = image_name = None
     if image:
-        mime_type = image.content_type or 'application/octet-stream'
-        if not mime_type.startswith('image/'):
+        image_mime = image.content_type or 'application/octet-stream'
+        if not image_mime.startswith('image/'):
             ctx['error'] = 'The header file must be an image (JPG or PNG).'
             return render(request, 'whatsapp_broadcast.html', ctx)
-        img_bytes = image.read()
-        header_image_id = upload_header_image(img_bytes, mime_type, image.name, phone_id)
-        if not header_image_id:
-            ctx['error'] = 'Failed to upload the image to WhatsApp — check API credentials and try again.'
-            return render(request, 'whatsapp_broadcast.html', ctx)
-        chat_media_name = stage_chat_image(img_bytes, image.name)
+        image_bytes = image.read()
+        image_name  = image.name
 
-    result = send_broadcast(
-        recipients,
-        template=template,
-        language=language,
-        phone_id=phone_id,
-        caption=caption or None,
-        header_image_id=header_image_id,
-        chat_media_name=chat_media_name,
-    )
+    job = BroadcastJob.objects.create(
+        template=template, label=labels.get(phone_id, phone_id),
+        phone_id=phone_id, total=len(recipients), status='running')
 
-    ctx['result'] = {
-        'total': len(recipients),
-        'sent': result['sent'],
-        'failed': result['failed'],
-        'errors': result['errors'][:20],
-        'more_errors': max(0, len(result['errors']) - 20),
-        'label': labels.get(phone_id, phone_id),
-    }
+    threading.Thread(
+        target=_broadcast_worker, args=(job.id, recipients),
+        kwargs=dict(template=template, language=language, phone_id=phone_id,
+                    caption=caption, image_bytes=image_bytes,
+                    image_mime=image_mime, image_name=image_name),
+        daemon=True,
+    ).start()
+
+    ctx['job'] = {'id': job.id, 'total': len(recipients), 'label': labels.get(phone_id, phone_id)}
     return render(request, 'whatsapp_broadcast.html', ctx)
+
+
+@login_required
+def whatsapp_broadcast_status(request, job_id):
+    """JSON progress for a running/finished broadcast, polled by the page."""
+    job = get_object_or_404(BroadcastJob, pk=job_id)
+    err_lines = [e for e in job.errors.split('\n') if e] if job.errors else []
+    return JsonResponse({
+        'status': job.status,
+        'total': job.total,
+        'sent': job.sent,
+        'failed': job.failed,
+        'message': job.message,
+        'label': job.label,
+        'errors': err_lines[:20],
+        'more_errors': max(0, len(err_lines) - 20),
+    })
 
 
 # ── Per-sender chat thread ────────────────────────────────────────────────────

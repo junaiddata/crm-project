@@ -59,6 +59,31 @@ class Lead(models.Model):
         return self.name or f'Lead #{self.pk}'
 
 
+class BroadcastJob(models.Model):
+    """Tracks one template broadcast so it can run in a background thread and the
+    page can poll progress — a synchronous send of 100+ numbers blows past the
+    nginx/gunicorn request timeout (504)."""
+    STATUS = [('running', 'Running'), ('done', 'Done'), ('error', 'Error')]
+
+    template   = models.CharField(max_length=255)
+    label      = models.CharField(max_length=100, blank=True)
+    phone_id   = models.CharField(max_length=40, blank=True)
+    total      = models.PositiveIntegerField(default=0)
+    sent       = models.PositiveIntegerField(default=0)
+    failed     = models.PositiveIntegerField(default=0)
+    status     = models.CharField(max_length=10, default='running', choices=STATUS)
+    errors     = models.TextField(blank=True)            # newline-joined failed numbers
+    message    = models.CharField(max_length=255, blank=True)  # summary / error text
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Broadcast {self.template} — {self.sent}/{self.total} ({self.status})'
+
+
 class WhatsAppOutbound(models.Model):
     MSG_TYPES = [
         ('text',     'Text'),
