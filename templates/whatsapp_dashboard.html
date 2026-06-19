@@ -6,657 +6,316 @@
   <title>WhatsApp Manager — CRM</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-      background: #f0f4f8;
-      color: #0f172a;
+      background: #d9dee3;
+      color: #111b21;
       font-size: 13px;
-      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      overflow: hidden;
     }
 
-    /* ── Header ── */
-    header {
+    /* ── App shell: two panes like WhatsApp Web ── */
+    .wa-app { display: flex; height: 100vh; }
+
+    /* A subtle top accent band, WhatsApp-Web style */
+    .wa-app::before {
+      content: ''; position: fixed; top: 0; left: 0; right: 0; height: 0;
+    }
+
+    /* ── Sidebar (conversation list) ── */
+    .wa-sidebar {
+      width: 30%; min-width: 330px; max-width: 460px;
+      background: #fff; display: flex; flex-direction: column;
+      border-right: 1px solid #e2e8f0; flex-shrink: 0;
+    }
+
+    .sb-header {
       background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
-      color: #fff;
-      padding: 0 28px;
-      height: 64px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+      color: #fff; height: 60px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 12px; padding: 0 16px;
     }
-    .header-left { display: flex; align-items: center; gap: 14px; }
-    .header-icon {
-      width: 38px; height: 38px; background: rgba(255,255,255,0.15);
-      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    .sb-logo {
+      width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.18);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-    .header-sub   { font-size: 11.5px; color: #6ee7b7; margin-top: 1px; }
-    .header-right { display: flex; align-items: center; gap: 8px; }
-    .header-link {
-      color: rgba(255,255,255,0.8); text-decoration: none;
-      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
-      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
-      transition: all 0.15s;
+    .sb-htext { flex: 1; min-width: 0; }
+    .sb-title { font-size: 15.5px; font-weight: 700; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 11px; color: #a7f3d0; margin-top: 1px; }
+    .sb-hbtn {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(255,255,255,0.12); border: none; cursor: pointer;
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      text-decoration: none; transition: background 0.15s;
     }
-    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .sb-hbtn:hover { background: rgba(255,255,255,0.26); }
 
-    /* ── Stats strip ── */
-    .stats-strip {
-      display: flex; gap: 12px; padding: 20px 28px 0;
-    }
-    .stat-card {
-      background: #fff; border-radius: 12px; padding: 16px 20px;
-      display: flex; align-items: center; gap: 14px; flex: 1;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
-      transition: box-shadow 0.15s;
-    }
-    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
-    .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
-
-    /* ── Controls ── */
-    .controls {
-      display: flex; align-items: center; gap: 10px;
-      padding: 16px 28px; flex-wrap: wrap;
-    }
+    /* search */
+    .sb-search { padding: 8px 12px; background: #fff; border-bottom: 1px solid #f1f5f9; }
     .search-wrap {
-      display: flex; align-items: center; gap: 7px;
-      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
-      padding: 0 12px; height: 38px; min-width: 260px;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .search-wrap:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
-    .search-wrap svg { color: #94a3b8; flex-shrink: 0; }
-    .search-wrap input {
-      border: none; outline: none; font-size: 13px; width: 100%;
-      background: transparent; color: #0f172a; font-family: inherit;
-    }
-    .search-wrap input::placeholder { color: #94a3b8; }
-
-    .filter-tabs { display: flex; gap: 4px; }
-    .filter-tab {
-      padding: 6px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
-      text-decoration: none; color: #64748b; background: #fff;
-      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
-    }
-    .filter-tab:hover { border-color: #10b981; color: #065f46; background: #f0fdf4; }
-    .filter-tab.active { background: #065f46; color: #fff; border-color: #065f46; }
-    .tab-count {
-      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
-      margin-left: 4px; background: rgba(0,0,0,0.07); color: inherit;
-    }
-    .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
-
-    /* ── Number filter row ── */
-    .number-bar {
       display: flex; align-items: center; gap: 8px;
-      padding: 0 28px 4px; flex-wrap: wrap;
+      background: #f0f2f5; border: 1px solid transparent; border-radius: 9px;
+      padding: 0 12px; height: 38px;
+      transition: border-color 0.15s, background 0.15s;
     }
-    .number-bar-label {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.05em; color: #94a3b8; margin-right: 2px;
+    .search-wrap:focus-within { background: #fff; border-color: #10b981; }
+    .search-wrap svg { color: #54656f; flex-shrink: 0; }
+    .search-wrap input {
+      border: none; outline: none; font-size: 13.5px; width: 100%;
+      background: transparent; color: #111b21; font-family: inherit;
     }
-    .num-tab {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
-      text-decoration: none; color: #475569; background: #fff;
-      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
-    }
-    .num-tab:hover { border-color: #10b981; color: #065f46; background: #f0fdf4; }
-    .num-tab.active { background: #ecfdf5; color: #065f46; border-color: #10b981; box-shadow: 0 0 0 2px rgba(16,185,129,0.12); }
-    .num-tab .num-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .num-tab .num-count {
-      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
-      background: #f1f5f9; color: #475569;
-    }
-    .num-tab.active .num-count { background: #d1fae5; color: #065f46; }
+    .search-wrap input::placeholder { color: #8696a0; }
 
-    /* ── "via number" chip on each card ── */
-    .via-chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;
-      border-radius: 5px; padding: 1px 7px; font-size: 10.5px; font-weight: 700;
-      letter-spacing: 0.01em; text-decoration: none; transition: all 0.12s;
+    /* filter chips */
+    .chip-row { display: flex; align-items: center; gap: 6px; padding: 8px 12px 4px; flex-wrap: wrap; }
+    .chip {
+      padding: 5px 13px; border-radius: 16px; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; color: #54656f; background: #f0f2f5;
+      border: 1px solid transparent; white-space: nowrap; transition: all 0.13s;
     }
-    .via-chip:hover { background: #d1fae5; border-color: #6ee7b7; }
-    .via-chip svg { flex-shrink: 0; }
+    .chip:hover { background: #e5e9ec; }
+    .chip.active { background: #d9fdd3; color: #065f46; border-color: #86efac; }
+    .chip .c-count { font-weight: 700; opacity: 0.7; margin-left: 3px; }
 
-    /* ── Feed ── */
-    .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
+    .chip-divider { width: 1px; height: 20px; background: #e2e8f0; margin: 0 2px; }
+    .num-chip { display: inline-flex; align-items: center; gap: 6px; }
+    .num-chip .num-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-    /* ── Conversation Card ── */
-    .conv-card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
-      overflow: hidden;
-      transition: box-shadow 0.15s;
-      border-left: 4px solid #f59e0b;
+    .sb-meta { padding: 4px 16px 6px; font-size: 11px; color: #8696a0; }
+
+    /* conversation list */
+    .chat-list { flex: 1; overflow-y: auto; }
+    .chat-item {
+      display: flex; align-items: center; gap: 13px;
+      padding: 10px 14px; cursor: pointer; position: relative;
+      border-bottom: 1px solid #f4f6f8; transition: background 0.12s;
     }
-    .conv-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
-    .conv-card.is-replied { border-left-color: #e2e8f0; }
-
-    /* ── Card top row ── */
-    .card-top {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px 0;
-    }
-    .sender-row { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    .chat-item:hover { background: #f5f6f6; }
+    .chat-item.active { background: #f0f2f5; }
+    .ci-avatar {
+      width: 49px; height: 49px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 13px;
-      background: linear-gradient(135deg, #065f46, #10b981); color: #fff;
-      letter-spacing: -0.5px;
+      font-weight: 700; font-size: 16px; color: #fff;
+      background: linear-gradient(135deg, #065f46, #10b981);
     }
-    .conv-card.is-replied .avatar { background: #e2e8f0; color: #94a3b8; }
-    .sender-info { display: flex; flex-direction: column; gap: 1px; }
-    .sender-num {
-      font-size: 14.5px; font-weight: 700; color: #0f172a;
-      text-decoration: none; transition: color 0.12s;
+    .ci-body { flex: 1; min-width: 0; }
+    .ci-line1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .ci-name {
+      font-size: 14.5px; font-weight: 600; color: #111b21;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .sender-num:hover { color: #059669; }
-    .sender-meta { font-size: 11.5px; color: #94a3b8; display: flex; align-items: center; gap: 6px; }
-    .msg-count-chip {
-      display: inline-flex; align-items: center;
-      background: #f1f5f9; color: #475569; border-radius: 4px;
-      padding: 1px 6px; font-size: 11px; font-weight: 600;
+    .ci-time { font-size: 11px; color: #8696a0; flex-shrink: 0; }
+    .chat-item.unread .ci-time { color: #25d366; font-weight: 700; }
+    .ci-line2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+    .ci-preview {
+      font-size: 13px; color: #667781; flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .chat-item.unread .ci-preview { color: #3b4a54; font-weight: 500; }
+    .ci-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .ci-num-tag {
+      font-size: 10px; font-weight: 700; color: #047857;
+      background: #e7f7ef; border: 1px solid #c6f0db; border-radius: 5px; padding: 0 6px;
+      white-space: nowrap;
+    }
+    .ci-unread-dot {
+      min-width: 18px; height: 18px; border-radius: 9px; background: #25d366;
+      color: #fff; font-size: 11px; font-weight: 700;
+      display: none; align-items: center; justify-content: center; padding: 0 5px;
+    }
+    .chat-item.unread .ci-unread-dot { display: flex; }
 
-    .status-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
-      flex-shrink: 0;
-    }
-    .badge-new      { background: #fef3c7; color: #92400e; }
-    .badge-replied  { background: #d1fae5; color: #065f46; }
-    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .sb-empty { padding: 48px 24px; text-align: center; color: #8696a0; }
+    .sb-empty p { font-size: 13.5px; margin-top: 10px; }
 
-    /* ── Message bubbles ── */
-    .card-messages { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
-    .msg-bubble-wrap { position: relative; }
-    .msg-bubble {
-      font-size: 13.5px; color: #334155; line-height: 1.6;
-      background: #f8fafc; border-radius: 0 8px 8px 8px;
-      padding: 9px 14px;
-      border-left: 3px solid #10b981;
-      word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      cursor: default;
+    /* ── Main pane (active conversation) ── */
+    .wa-main { flex: 1; min-width: 0; position: relative; background: #eef2f7; }
+    #chatFrame {
+      width: 100%; height: 100%; border: none; display: none; background: #eef2f7;
     }
-    .conv-card.is-replied .msg-bubble { border-left-color: #e2e8f0; color: #64748b; background: #fafafa; }
+    #chatFrame.show { display: block; }
 
-    /* Full-text tooltip shown on hover */
-    .msg-tooltip {
-      display: none;
-      position: absolute;
-      left: 0; top: calc(100% + 6px);
-      z-index: 50;
-      background: #1e293b;
-      color: #f1f5f9;
-      font-size: 12.5px;
-      line-height: 1.6;
-      padding: 10px 14px;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.22);
-      max-width: 420px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      pointer-events: none;
+    /* WhatsApp-Web empty splash */
+    .main-empty {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; text-align: center; padding: 0 40px;
+      background: #f7f9fb; border-bottom: 6px solid #25d366;
     }
-    .msg-tooltip::before {
-      content: '';
-      position: absolute;
-      top: -6px; left: 18px;
-      border: 6px solid transparent;
-      border-top: none;
-      border-bottom-color: #1e293b;
+    .main-empty.hide { display: none; }
+    .me-logo {
+      width: 200px; height: 200px; border-radius: 50%;
+      background: #e9eef0; display: flex; align-items: center; justify-content: center;
     }
-    .msg-bubble-wrap:hover .msg-tooltip { display: block; }
+    .me-title { font-size: 28px; font-weight: 300; color: #41525d; letter-spacing: -0.01em; }
+    .me-sub   { font-size: 14px; color: #667781; max-width: 460px; line-height: 1.6; }
+    .me-hint  { font-size: 13px; color: #8696a0; display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 
-    /* ── Reply sent indicator ── */
-    .reply-sent {
-      display: flex; align-items: flex-start; gap: 9px;
-      background: #f0fdf4; border-top: 1px solid #d1fae5;
-      padding: 10px 18px;
-      font-size: 12.5px; color: #065f46;
+    @media (max-width: 820px) {
+      .wa-sidebar { width: 100%; max-width: none; }
+      body.chat-open .wa-sidebar { display: none; }
+      body:not(.chat-open) .wa-main { display: none; }
     }
-    .reply-sent svg { flex-shrink: 0; margin-top: 2px; color: #10b981; }
-    .reply-sent-label { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #047857; margin-bottom: 2px; }
-    .reply-sent-text { color: #334155; font-size: 13px; }
-
-    /* ── Action bar ── */
-    .card-actions {
-      display: flex; align-items: center; gap: 6px;
-      padding: 10px 18px 14px;
-      border-top: 1px solid #f1f5f9;
-      flex-wrap: wrap;
-    }
-    .action-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 13px; border-radius: 7px; font-size: 12px; font-weight: 600;
-      border: 1px solid transparent; cursor: pointer; font-family: inherit;
-      transition: all 0.15s; text-decoration: none; white-space: nowrap;
-    }
-    .action-btn svg { flex-shrink: 0; }
-
-    .btn-view-chat  { background: #f0fdf4; color: #065f46; border-color: #bbf7d0; }
-    .btn-view-chat:hover { background: #dcfce7; border-color: #86efac; }
-
-    .btn-add-lead   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-    .btn-add-lead:hover { background: #dbeafe; border-color: #93c5fd; }
-
-    .btn-reply      { background: #065f46; color: #fff; border-color: #065f46; }
-    .btn-reply:hover { background: #047857; border-color: #047857; }
-
-    .btn-undo       { background: transparent; color: #94a3b8; border-color: #e2e8f0; }
-    .btn-undo:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
-
-    /* ── Reply compose box ── */
-    .reply-box { display: none; padding: 0 18px 16px; }
-    .reply-box.open { display: block; }
-    .reply-box-inner {
-      background: #f8fafc; border: 1.5px solid #d1fae5;
-      border-radius: 10px; overflow: hidden;
-    }
-    .reply-box-inner:focus-within { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
-    .reply-box textarea {
-      width: 100%; min-height: 72px; padding: 10px 14px; resize: vertical;
-      border: none; outline: none; font-family: inherit;
-      font-size: 13.5px; color: #0f172a; background: transparent;
-      display: block;
-    }
-    .reply-box-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 12px; background: #f0fdf4; border-top: 1px solid #d1fae5;
-    }
-    .reply-placeholder-hint { font-size: 11.5px; color: #94a3b8; }
-    .reply-btns { display: flex; gap: 6px; }
-    .btn-send-reply {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 16px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
-      background: #059669; color: #fff; border: none; cursor: pointer;
-      font-family: inherit; transition: background 0.15s;
-    }
-    .btn-send-reply:hover:not(:disabled) { background: #047857; }
-    .btn-send-reply:disabled { opacity: 0.55; cursor: not-allowed; }
-    .btn-cancel-reply {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
-      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
-      cursor: pointer; font-family: inherit; transition: all 0.15s;
-    }
-    .btn-cancel-reply:hover { background: #f1f5f9; }
-    .error-msg {
-      font-size: 12px; color: #dc2626; background: #fef2f2;
-      border: 1px solid #fecaca; border-radius: 6px;
-      padding: 7px 12px; margin-top: 8px; display: none;
-    }
-
-    /* ── Empty state ── */
-    .empty-wrap { flex: 1; padding: 0 28px 32px; }
-    .empty-state {
-      background: #fff; border-radius: 12px; text-align: center;
-      padding: 64px 20px; color: #94a3b8;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .empty-state p { font-size: 14px; margin-top: 14px; }
-
-    footer {
-      padding: 14px 28px; text-align: center; font-size: 11.5px;
-      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
-    }
-    footer a { color: #10b981; text-decoration: none; }
-    footer code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
-
-    /* ── Toast ── */
-    #toast {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999;
-      padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
-      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.22);
-      display: none; align-items: center; gap: 8px;
-      animation: slideUp 0.22s ease;
-    }
-    @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   </style>
 </head>
-<body>
+<body{% if open_sender %} class="chat-open"{% endif %}>
 
-<header>
-  <div class="header-left">
-    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
-         alt="Company Logo"
-         style="height:38px; object-fit:contain; max-width:130px; display:block;">
-    <div>
-      <div class="header-title">WhatsApp Manager</div>
-      <div class="header-sub">{{ total }} message{{ total|pluralize }} · {{ unreplied }} pending</div>
-    </div>
-  </div>
-  <div class="header-right">
-    <a href="/whatsapp/broadcast/" class="header-link" style="background:rgba(255,255,255,0.22);">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:5px;"><path d="M2 3a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V3zM2 9a1 1 0 011-1h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V9z"/></svg>
-      Broadcast
-    </a>
-    <a href="/" class="header-link" style="background:rgba(255,255,255,0.22);">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="display:inline;vertical-align:middle;margin-right:5px;"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
-      Home
-    </a>
-  </div>
-</header>
+<div class="wa-app">
 
-<!-- Stats -->
-<div class="stats-strip">
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#d1fae5;color:#065f46;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ total }}</div>
-      <div class="stat-lbl">Total messages</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#fef3c7;color:#d97706;">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ unreplied }}</div>
-      <div class="stat-lbl">Needs reply</div>
-    </div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#dcfce7;color:#059669;">
-      <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-    </div>
-    <div>
-      <div class="stat-val">{{ replied_count }}</div>
-      <div class="stat-lbl">Replied</div>
-    </div>
-  </div>
-</div>
-
-<!-- Controls -->
-<div class="controls">
-  <form method="get" style="display:contents;">
-    {% if active_number != 'all' %}<input type="hidden" name="number" value="{{ active_number }}">{% endif %}
-    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
-    <div class="search-wrap">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-      <input name="q" value="{{ search }}" placeholder="Search by number or message…" autocomplete="off">
-    </div>
-  </form>
-
-  <div class="filter-tabs">
-    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
-       class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
-      All <span class="tab-count">{{ total }}</span>
-    </a>
-    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
-       class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
-      Needs reply <span class="tab-count">{{ unreplied }}</span>
-    </a>
-    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}"
-       class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
-      Replied <span class="tab-count">{{ replied_count }}</span>
-    </a>
-  </div>
-
-  <div class="controls-right">{{ shown_count }} conversation{{ shown_count|pluralize }} shown</div>
-</div>
-
-<!-- Number filter -->
-<div class="number-bar">
-  <span class="number-bar-label">Number</span>
-  <a href="?number=all{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}"
-     class="num-tab {% if active_number == 'all' %}active{% endif %}">
-    All numbers <span class="num-count">{{ all_count }}</span>
-  </a>
-  {% for n in numbers %}
-  <a href="?number={{ n.id }}{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}"
-     class="num-tab {% if active_number == n.id %}active{% endif %}">
-    <span class="num-dot" style="background:{% cycle '#10b981' '#3b82f6' '#f59e0b' '#8b5cf6' '#ec4899' as numdot %};"></span>
-    {{ n.label }} <span class="num-count">{{ n.count }}</span>
-  </a>
-  {% endfor %}
-</div>
-
-<!-- Conversation feed -->
-{% if groups %}
-<div class="feed">
-  {% for group in groups %}
-  {% with gid=group.reply_pk %}
-
-  <div class="conv-card {% if group.all_replied %}is-replied{% endif %}" id="card-{{ gid }}">
-
-    <!-- Top row: avatar + sender info + badge -->
-    <div class="card-top">
-      <div class="sender-row">
-        <div class="avatar">{{ group.sender|slice:"-2:" }}</div>
-        <div class="sender-info">
-          {% if group.sender_name %}
-          <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">{{ group.sender_name }}</a>
-          <div class="sender-meta">
-            +{{ group.sender }} · {{ group.first_time|date:"d M Y · H:i" }}
-            {% if group.count > 1 %}
-              <span class="msg-count-chip">{{ group.count }} messages</span>
-            {% endif %}
-            {% for n in group.numbers %}
-              <a class="via-chip" href="/whatsapp/chat/{{ group.sender }}/?number={{ n.id }}" title="Open chat via {{ n.label }}">
-                <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                {{ n.label }}
-              </a>
-            {% endfor %}
-          </div>
-          {% else %}
-          <a class="sender-num" href="/whatsapp/chat/{{ group.sender }}/">+{{ group.sender }}</a>
-          <div class="sender-meta">
-            {{ group.first_time|date:"d M Y · H:i" }}
-            {% if group.count > 1 %}
-              <span class="msg-count-chip">{{ group.count }} messages</span>
-            {% endif %}
-            {% for n in group.numbers %}
-              <a class="via-chip" href="/whatsapp/chat/{{ group.sender }}/?number={{ n.id }}" title="Open chat via {{ n.label }}">
-                <svg width="9" height="9" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                {{ n.label }}
-              </a>
-            {% endfor %}
-          </div>
-          {% endif %}
-        </div>
+  <!-- ─────────── Sidebar: conversation list ─────────── -->
+  <aside class="wa-sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
       </div>
-      <span class="status-badge {% if group.all_replied %}badge-replied{% else %}badge-new{% endif %}" id="badge-{{ gid }}">
-        <span class="badge-dot" style="background:{% if group.all_replied %}#10b981{% else %}#f59e0b{% endif %};"></span>
-        {% if group.all_replied %}Replied{% else %}New{% endif %}
-      </span>
-    </div>
-
-    <!-- Latest message preview -->
-    <div class="card-messages">
-      {% with msg=group.latest %}
-      <div class="msg-bubble-wrap">
-        {% if msg.msg_type == 'image' %}
-          <div class="msg-bubble">📷 {% if msg.text_body %}{{ msg.text_body }}{% else %}Photo{% endif %}</div>
-          <div class="msg-tooltip">📷 {% if msg.text_body %}{{ msg.text_body }}{% else %}Photo{% endif %}</div>
-        {% elif msg.msg_type == 'video' %}
-          <div class="msg-bubble">🎥 {% if msg.text_body %}{{ msg.text_body }}{% else %}Video{% endif %}</div>
-          <div class="msg-tooltip">🎥 {% if msg.text_body %}{{ msg.text_body }}{% else %}Video{% endif %}</div>
-        {% elif msg.msg_type == 'audio' %}
-          <div class="msg-bubble">🎵 Voice message</div>
-          <div class="msg-tooltip">🎵 Voice message</div>
-        {% elif msg.msg_type == 'document' %}
-          <div class="msg-bubble">📄 {% if msg.media_name %}{{ msg.media_name }}{% else %}Document{% endif %}</div>
-          <div class="msg-tooltip">📄 {% if msg.media_name %}{{ msg.media_name }}{% else %}Document{% endif %}</div>
-        {% else %}
-          <div class="msg-bubble">{{ msg.text_body }}</div>
-          <div class="msg-tooltip">{{ msg.text_body }}</div>
-        {% endif %}
+      <div class="sb-htext">
+        <div class="sb-title">WhatsApp Manager</div>
+        <div class="sb-sub">{{ total }} message{{ total|pluralize }} · {{ unreplied }} unread</div>
       </div>
-      {% endwith %}
-    </div>
-
-    <!-- Reply sent indicator -->
-    {% if group.reply_text %}
-    <div class="reply-sent" id="reply-sent-{{ gid }}">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-      <div>
-        <div class="reply-sent-label">Your reply</div>
-        <div class="reply-sent-text" id="reply-text-{{ gid }}">{{ group.reply_text }}</div>
-      </div>
-    </div>
-    {% else %}
-    <div class="reply-sent" id="reply-sent-{{ gid }}" style="display:none;">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-      <div>
-        <div class="reply-sent-label">Your reply</div>
-        <div class="reply-sent-text" id="reply-text-{{ gid }}"></div>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Action bar -->
-    <div class="card-actions" id="actions-{{ gid }}">
-      <a href="/whatsapp/chat/{{ group.sender }}/{% if group.business_phone_id %}?number={{ group.business_phone_id }}{% endif %}" class="action-btn btn-view-chat">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
-        View Chat
+      <a href="/whatsapp/broadcast/" class="sb-hbtn" title="Broadcast">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H3a1 1 0 01-1-1V3zM2 9a1 1 0 011-1h14a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V9z"/></svg>
       </a>
-      {% if group.any_unreplied %}
-      <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-        Quick Reply
-      </button>
-      {% else %}
-      <button class="action-btn btn-undo" onclick="undoReply({{ gid }}, {{ group.all_ids|join:',' }})">↩ Mark as new</button>
-      {% endif %}
+      <a href="/" class="sb-hbtn" title="Home">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      </a>
     </div>
 
-    <!-- Reply compose -->
-    <div class="reply-box" id="reply-box-{{ gid }}">
-      <div class="reply-box-inner">
-        <textarea id="textarea-{{ gid }}" placeholder="Type your reply to +{{ group.sender }}…"></textarea>
-        <div class="reply-box-footer">
-          <span class="reply-placeholder-hint">Enter to add a line · click Send when ready</span>
-          <div class="reply-btns">
-            <button class="btn-cancel-reply" onclick="closeReply({{ gid }})">Cancel</button>
-            <button class="btn-send-reply" id="send-btn-{{ gid }}"
-              onclick="sendReply({{ gid }}, '{{ group.sender|escapejs }}', [{{ group.all_ids|join:',' }}])">
-              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
-              Send Reply
-            </button>
+    <!-- search -->
+    <div class="sb-search">
+      <form method="get">
+        {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+        {% if active_number != 'all' %}<input type="hidden" name="number" value="{{ active_number }}">{% endif %}
+        <div class="search-wrap">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input name="q" value="{{ search }}" placeholder="Search name, number or message…" autocomplete="off">
+        </div>
+      </form>
+    </div>
+
+    <!-- status + number filter chips -->
+    <div class="chip-row">
+      <a class="chip {% if active_filter == 'all' %}active{% endif %}"
+         href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}">All</a>
+      <a class="chip {% if active_filter == 'unreplied' %}active{% endif %}"
+         href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}{% if active_number != 'all' %}&number={{ active_number }}{% endif %}">
+         Unread <span class="c-count">{{ unreplied }}</span></a>
+
+      <span class="chip-divider"></span>
+
+      <a class="chip num-chip {% if active_number == 'all' %}active{% endif %}"
+         href="?number=all{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}">
+         All numbers <span class="c-count">{{ all_count }}</span></a>
+      {% for n in numbers %}
+      <a class="chip num-chip {% if active_number == n.id %}active{% endif %}"
+         href="?number={{ n.id }}{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}">
+        <span class="num-dot" style="background:{% cycle '#10b981' '#3b82f6' '#f59e0b' '#8b5cf6' '#ec4899' as numdot %};"></span>
+        {{ n.label }} <span class="c-count">{{ n.count }}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="sb-meta">{{ shown_count }} chat{{ shown_count|pluralize }}{% if search %} for “{{ search }}”{% endif %}</div>
+
+    <!-- list -->
+    <div class="chat-list">
+      {% for c in conversations %}
+      <div class="chat-item {% if c.unread %}unread{% endif %}"
+           data-sender="{{ c.sender }}"
+           data-number="{{ c.business_phone_id }}"
+           onclick="openChat(this)">
+        <div class="ci-avatar">{{ c.sender|slice:"-2:" }}</div>
+        <div class="ci-body">
+          <div class="ci-line1">
+            <span class="ci-name">{% if c.sender_name %}{{ c.sender_name }}{% else %}+{{ c.sender }}{% endif %}</span>
+            <span class="ci-time">{{ c.first_time|date:"j M" }}</span>
+          </div>
+          <div class="ci-line2">
+            <span class="ci-preview">{{ c.preview|default:"(no text)" }}</span>
+            <span class="ci-badges">
+              {% if c.business_label %}<span class="ci-num-tag">{{ c.business_label }}</span>{% endif %}
+              <span class="ci-unread-dot">{% if c.count > 1 %}{{ c.count }}{% endif %}</span>
+            </span>
           </div>
         </div>
       </div>
-      <div class="error-msg" id="err-{{ gid }}"></div>
+      {% empty %}
+      <div class="sb-empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="#cbd5e1"><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        <p>{% if search %}No chats match “{{ search }}”{% elif active_filter == 'unreplied' %}All caught up — no unread chats{% else %}No WhatsApp conversations yet{% endif %}</p>
+      </div>
+      {% endfor %}
     </div>
+  </aside>
 
-  </div>
-  {% endwith %}
-  {% endfor %}
+  <!-- ─────────── Main: active conversation ─────────── -->
+  <main class="wa-main">
+    <div class="main-empty" id="mainEmpty">
+      <div class="me-logo">
+        <svg width="92" height="92" viewBox="0 0 24 24" fill="#9fb3bd"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+      </div>
+      <div class="me-title">WhatsApp Manager</div>
+      <div class="me-sub">Select a conversation on the left to read and reply. Each of your business numbers is kept as a separate chat.</div>
+      <div class="me-hint">
+        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
+        Replies send from the same number the customer messaged
+      </div>
+    </div>
+    <iframe id="chatFrame" title="Conversation" src="about:blank"></iframe>
+  </main>
+
 </div>
-{% else %}
-<div class="empty-wrap">
-  <div class="empty-state">
-    <svg width="52" height="52" viewBox="0 0 24 24" fill="#cbd5e1"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-    <p>{% if search %}No messages match "{{ search }}"{% elif active_filter == 'unreplied' %}All caught up — no pending messages{% elif active_filter == 'replied' %}No replied messages yet{% else %}No WhatsApp messages yet{% endif %}</p>
-  </div>
-</div>
-{% endif %}
-
-<footer>
-  <a href="/">← Home</a> &nbsp;·&nbsp; <a href="/crm/">Leads Dashboard</a>
-  &nbsp;·&nbsp; Webhook: <code>/api/webhook/whatsapp/</code>
-</footer>
-
-<div id="toast"></div>
 
 <script>
-  const CSRF = '{{ csrf_token }}';
+  const OPEN_SENDER = '{{ open_sender|escapejs }}';
+  const OPEN_NUMBER = '{{ open_number|escapejs }}';
 
-  function openReply(id) {
-    document.getElementById('reply-box-' + id).classList.add('open');
-    document.getElementById('textarea-' + id).focus();
+  const frame = document.getElementById('chatFrame');
+  const empty = document.getElementById('mainEmpty');
+
+  function openChat(el) {
+    const sender = el.dataset.sender;
+    const number = el.dataset.number || '';
+
+    document.querySelectorAll('.chat-item.active').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    // Opening a chat = reading it; clear the unread styling immediately.
+    el.classList.remove('unread');
+
+    let url = '/whatsapp/chat/' + encodeURIComponent(sender) + '/?embed=1';
+    if (number) url += '&number=' + encodeURIComponent(number);
+    frame.src = url;
+    frame.classList.add('show');
+    empty.classList.add('hide');
+    document.body.classList.add('chat-open');
+
+    // Keep it in the URL so a refresh reopens the same chat.
+    const q = new URLSearchParams(window.location.search);
+    q.set('open', sender);
+    if (number) q.set('open_number', number); else q.delete('open_number');
+    history.replaceState(null, '', window.location.pathname + '?' + q.toString());
   }
 
-  function closeReply(id) {
-    document.getElementById('reply-box-' + id).classList.remove('open');
-    document.getElementById('textarea-' + id).value = '';
-    document.getElementById('err-' + id).style.display = 'none';
+  // Auto-open the conversation named in the URL (?open=&open_number=).
+  if (OPEN_SENDER) {
+    const sel = '.chat-item[data-sender="' + (window.CSS && CSS.escape ? CSS.escape(OPEN_SENDER) : OPEN_SENDER) + '"]'
+              + (OPEN_NUMBER ? '[data-number="' + (window.CSS && CSS.escape ? CSS.escape(OPEN_NUMBER) : OPEN_NUMBER) + '"]' : '');
+    const row = document.querySelector(sel) ||
+                document.querySelector('.chat-item[data-sender="' + (window.CSS && CSS.escape ? CSS.escape(OPEN_SENDER) : OPEN_SENDER) + '"]');
+    if (row) openChat(row);
   }
 
-  async function sendReply(id, sender, allIds) {
-    const textarea = document.getElementById('textarea-' + id);
-    const message  = textarea.value.trim();
-    if (!message) { textarea.focus(); return; }
-
-    const btn = document.getElementById('send-btn-' + id);
-    const err = document.getElementById('err-' + id);
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
-    err.style.display = 'none';
-
-    const alsoMarkIds = (allIds || []).filter(i => i !== id);
-
-    try {
-      const res  = await fetch('/api/whatsapp/' + id + '/reply/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ message, also_mark_ids: alsoMarkIds }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.ok) {
-        const badge = document.getElementById('badge-' + id);
-        badge.className = 'status-badge badge-replied';
-        badge.innerHTML = '<span class="badge-dot" style="background:#10b981;"></span> Replied';
-
-        document.getElementById('reply-text-' + id).textContent = message;
-        document.getElementById('reply-sent-' + id).style.display = 'flex';
-
-        const card = document.getElementById('card-' + id);
-        card.classList.add('is-replied');
-
-        document.getElementById('actions-' + id).innerHTML =
-          '<button class="action-btn btn-undo" onclick="undoReply(' + id + ',[' + (allIds||[]).join(',') + '])">↩ Mark as new</button>';
-
-        closeReply(id);
-        showToast('Reply sent to +' + sender, '#059669');
-      } else {
-        err.textContent = data.error || 'Failed to send. Check API credentials.';
-        err.style.display = 'block';
-        btn.disabled = false;
-        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg> Send Reply';
+  // The embedded chat tells us when a reply was sent — clear that row's unread dot.
+  window.addEventListener('message', (e) => {
+    const d = e.data || {};
+    if (d.type !== 'wa-replied') return;
+    document.querySelectorAll('.chat-item').forEach(item => {
+      if (item.dataset.sender === d.sender &&
+          (!d.number || (item.dataset.number || '') === d.number)) {
+        item.classList.remove('unread');
       }
-    } catch {
-      err.textContent = 'Network error — is the server running?';
-      err.style.display = 'block';
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg> Send Reply';
-    }
-  }
-
-  async function undoReply(id, allIds) {
-    const alsoMarkIds = (allIds || []).filter(i => i !== id);
-    const res = await fetch('/api/whatsapp/' + id + '/reply/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-      body: JSON.stringify({ message: '', undo: true, also_mark_ids: alsoMarkIds }),
     });
-    if (res.ok) location.reload();
-  }
-
-  function showToast(msg, color) {
-    const t = document.getElementById('toast');
-    t.textContent = '✓ ' + msg;
-    t.style.cssText = 'display:flex;background:' + color + ';';
-    setTimeout(() => { t.style.display = 'none'; }, 3000);
-  }
+  });
 </script>
 </body>
 </html>

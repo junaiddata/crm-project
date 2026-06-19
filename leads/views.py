@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from rest_framework.views import APIView
@@ -376,6 +377,51 @@ def _conversations_by_sender(qs):
     return result
 
 
+def _wa_preview(msg):
+    """Short last-message preview for a conversation row (WhatsApp-list style)."""
+    t = msg.msg_type
+    if t == 'image':    return '📷 ' + (msg.text_body or 'Photo')
+    if t == 'video':    return '🎥 ' + (msg.text_body or 'Video')
+    if t == 'audio':    return '🎤 Voice message'
+    if t == 'document': return '📄 ' + (msg.media_name or 'Document')
+    return msg.text_body or ''
+
+
+def _wa_conversations(qs):
+    """One row per (customer ↔ our-number) pair — each number is its own chat.
+
+    qs is ordered newest-first, so the first time we meet a (sender, number)
+    pair is its latest message and rows come out by most-recent activity."""
+    labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    convs, order = {}, []
+    for msg in qs:  # newest first
+        key = (msg.sender, msg.business_phone_id)
+        if key not in convs:
+            convs[key] = {'latest': msg, 'messages': [msg]}
+            order.append(key)
+        else:
+            convs[key]['messages'].append(msg)
+
+    result = []
+    for key in order:
+        c = convs[key]
+        msgs, latest = c['messages'], c['latest']
+        sender, pid = key
+        result.append({
+            'sender': sender,
+            'business_phone_id': pid,
+            'business_label': labels.get(pid, pid or ''),
+            'sender_name': next((m.sender_name for m in msgs if m.sender_name), ''),
+            'latest': latest,
+            'preview': _wa_preview(latest),
+            'first_time': latest.received_at,
+            'count': len(msgs),
+            'unread': any(not m.replied for m in msgs),
+            'all_replied': all(m.replied for m in msgs),
+        })
+    return result
+
+
 @login_required
 def whatsapp_dashboard(request):
     base = WhatsAppLead.objects.all()
@@ -390,17 +436,15 @@ def whatsapp_dashboard(request):
     active_filter = request.GET.get('filter', 'all')
     if active_filter == 'unreplied':
         qs = qs.filter(replied=False)
-    elif active_filter == 'replied':
-        qs = qs.filter(replied=True)
 
     search = request.GET.get('q', '').strip()
     if search:
-        qs = qs.filter(Q(sender__icontains=search) | Q(text_body__icontains=search))
+        qs = qs.filter(Q(sender__icontains=search) | Q(text_body__icontains=search)
+                       | Q(sender_name__icontains=search))
 
     # Reply/total counts respect the selected number
     total     = number_base.count()
     unreplied = number_base.filter(replied=False).count()
-    replied   = number_base.filter(replied=True).count()
 
     # Per-number chips (independent of the reply filter)
     labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
@@ -410,11 +454,11 @@ def whatsapp_dashboard(request):
         for pid in getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
     ]
 
-    groups = _conversations_by_sender(qs)
+    conversations = _wa_conversations(qs)
 
     return render(request, 'whatsapp_dashboard.html', {
-        'groups': groups,
-        'shown_count': len(groups),
+        'conversations': conversations,
+        'shown_count': len(conversations),
         'active_filter': active_filter,
         'active_number': active_number,
         'numbers': numbers,
@@ -422,7 +466,8 @@ def whatsapp_dashboard(request):
         'search': search,
         'total': total,
         'unreplied': unreplied,
-        'replied_count': replied,
+        'open_sender': request.GET.get('open', ''),
+        'open_number': request.GET.get('open_number', ''),
     })
 
 
@@ -534,6 +579,7 @@ def whatsapp_broadcast(request):
 # ── Per-sender chat thread ────────────────────────────────────────────────────
 
 @login_required
+@xframe_options_sameorigin  # allow this page to load inside the WhatsApp shell's iframe (same origin only)
 def whatsapp_chat(request, sender):
     from datetime import timedelta
 
@@ -601,6 +647,9 @@ def whatsapp_chat(request, sender):
         'numbers': numbers,
         'active_number': active_number,
         'active_label': labels.get(active_number, ''),
+        # When loaded inside the WhatsApp-Web shell's right pane, hide the
+        # standalone CRM chrome and show only the conversation.
+        'embed': request.GET.get('embed') == '1',
     })
 
 

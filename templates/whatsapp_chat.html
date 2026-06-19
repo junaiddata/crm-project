@@ -270,9 +270,43 @@
     }
     .num-bar a:hover { background: rgba(255,255,255,0.22); color: #fff; }
     .num-bar a.active { background: #fff; color: #065f46; }
+
+    /* ── Embed mode (inside the WhatsApp-Web shell's right pane) ── */
+    body.embed { background: #eef2f7; }
+    body.embed > header, body.embed > .num-bar { display: none; }
+    .embed-header { display: none; }
+    body.embed .embed-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 16px; background: #f0f2f5;
+      border-bottom: 1px solid #d8dde3; flex-shrink: 0;
+    }
+    .eh-avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #065f46, #10b981); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+    }
+    .eh-info { flex: 1; min-width: 0; }
+    .eh-name { font-size: 15px; font-weight: 600; color: #111b21; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .eh-sub  { font-size: 12px; color: #667781; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .eh-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .eh-icon {
+      width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+      background: transparent; color: #54656f; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .eh-icon:hover { background: #e3e7ea; }
+    .eh-lead {
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: #065f46;
+      background: #e7f7ef; border: 1px solid #a7f3d0; border-radius: 8px; padding: 7px 12px;
+      transition: all 0.15s;
+    }
+    .eh-lead:hover { background: #d1fae5; }
+    .eh-lead.active { background: #065f46; color: #fff; border-color: #065f46; }
   </style>
 </head>
-<body>
+<body class="{% if embed %}embed{% endif %}">
 
 <header>
   <a href="/whatsapp/" class="back-btn">
@@ -301,6 +335,21 @@
     Home
   </a>
 </header>
+
+<!-- Compact WhatsApp-style header (shown only when embedded in the shell) -->
+<div class="embed-header">
+  <div class="eh-avatar">{{ sender|slice:"-2:" }}</div>
+  <div class="eh-info">
+    <div class="eh-name">{% if sender_name %}{{ sender_name }}{% else %}+{{ sender }}{% endif %}</div>
+    <div class="eh-sub">+{{ sender }}{% if active_label %} · via {{ active_label }}{% endif %} · {{ message_count }} message{{ message_count|pluralize }}</div>
+  </div>
+  <div class="eh-actions">
+    <button class="eh-lead" id="leadModeBtnEmbed" onclick="toggleSelectMode()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+      Add to Leads
+    </button>
+  </div>
+</div>
 
 {% if numbers|length > 1 %}
 <!-- Number switcher: each number is a separate conversation -->
@@ -557,6 +606,7 @@
         appendTextBubble(message);
         msgInput.value = '';
         msgInput.style.height = 'auto';
+        notifyParentReplied();
         showToast('Sent');
       } else {
         showToast(data.error || 'Failed to send', '#dc2626');
@@ -586,6 +636,7 @@
         msgInput.value = '';
         msgInput.style.height = 'auto';
         clearFile();
+        notifyParentReplied();
         showToast('Sent');
       } else {
         showToast(data.error || 'Failed to send', '#dc2626');
@@ -666,6 +717,8 @@
     document.body.classList.toggle('select-mode', on);
     document.getElementById('selectBar').classList.toggle('show', on);
     document.getElementById('leadModeBtn').classList.toggle('active', on);
+    const embedBtn = document.getElementById('leadModeBtnEmbed');
+    if (embedBtn) embedBtn.classList.toggle('active', on);
     if (!on) {
       selected.clear();
       document.querySelectorAll('.msg-row.in.selected').forEach(r => r.classList.remove('selected'));
@@ -753,6 +806,15 @@
     t.style.background = bg || '#333';
     t.style.display = 'block';
     setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+
+  // When embedded in the WhatsApp-Web shell, tell the parent we just replied so
+  // it can clear the unread dot on this conversation row without a reload.
+  function notifyParentReplied() {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        { type: 'wa-replied', sender: SENDER, number: ACTIVE_NUMBER }, '*');
+    }
   }
 </script>
 <style>
