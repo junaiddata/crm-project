@@ -58,8 +58,36 @@ def fetch_emails(limit=500):
 
     new_count = 0
     try:
-        with MailBox(cfg.imap_host, cfg.imap_port).login(cfg.email_address, cfg.password) as mailbox:
-            for msg in mailbox.fetch(AND(date_gte=since), mark_seen=False, bulk=True, limit=limit):
+        with MailBox(cfg.imap_host, cfg.imap_port, timeout=30).login(cfg.email_address, cfg.password) as mailbox:
+            # Two-pass fetch. The 1-day re-scan window means most messages in
+            # range are already stored, so a full download every click would
+            # re-pull megabytes of bodies + attachments we already have. First
+            # pass is headers-only (cheap) to find which Message-IDs are new;
+            # second pass downloads full content for only those UIDs.
+            #
+            # Fetch newest-first (reverse=True): on a busy mailbox the in-window
+            # match set can exceed `limit`, and the IMAP default order is oldest-
+            # first — so today's mail would sit past the cutoff and never load.
+            new_uids = []
+            for hdr in mailbox.fetch(AND(date_gte=since), mark_seen=False, headers_only=True,
+                                     bulk=True, limit=limit, reverse=True):
+                from_addr = (hdr.from_ or '').strip().lower()
+                if not from_addr or from_addr == cfg.email_address.lower():
+                    continue  # skip our own copies / malformed senders
+                message_id = (hdr.headers.get('message-id', ('',))[0] or '').strip()
+                if not message_id:
+                    message_id = f'<no-id-{hdr.uid}-{hdr.date_str}@{cfg.imap_host}>'
+                if EmailLog.objects.filter(message_id=message_id).exists():
+                    continue  # already stored — don't re-download body/attachments
+                new_uids.append(hdr.uid)
+
+            if not new_uids:
+                cfg.last_fetch_at = timezone.now()
+                cfg.last_fetch_info = 'OK — 0 new message(s)'
+                cfg.save(update_fields=['last_fetch_at', 'last_fetch_info'])
+                return 0, 'Fetched 0 new message(s)'
+
+            for msg in mailbox.fetch(AND(uid=new_uids), mark_seen=False, bulk=True):
                 from_addr = (msg.from_ or '').strip().lower()
                 if not from_addr or from_addr == cfg.email_address.lower():
                     continue  # skip our own copies / malformed senders
@@ -169,7 +197,7 @@ def test_connection(cfg):
 
     from imap_tools import MailBox
     try:
-        with MailBox(cfg.imap_host, cfg.imap_port).login(cfg.email_address, cfg.password):
+        with MailBox(cfg.imap_host, cfg.imap_port, timeout=20).login(cfg.email_address, cfg.password):
             results['imap'] = 'ok'
     except Exception as exc:
         results['imap'] = str(exc) or exc.__class__.__name__
