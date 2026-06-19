@@ -58,9 +58,7 @@ def email_dashboard(request):
 
     qs = base
     active_filter = request.GET.get('filter', 'all')
-    if active_filter == 'unreplied':
-        qs = qs.filter(replied=False)
-    elif active_filter == 'replied':
+    if active_filter == 'replied':
         qs = qs.filter(replied=True)
 
     search = request.GET.get('q', '').strip()
@@ -87,7 +85,6 @@ def email_dashboard(request):
         qs = qs.filter(received_at__date__lte=pt)
 
     total     = base.count()
-    unreplied = base.filter(replied=False).count()
     replied   = base.filter(replied=True).count()
 
     # Time-based stats over all inbound mail.
@@ -107,7 +104,6 @@ def email_dashboard(request):
         'date_from': date_from if pf else '',
         'date_to': date_to if pt else '',
         'total': total,
-        'unreplied': unreplied,
         'replied_count': replied,
         'today_count': today_count,
         'week_count': week_count,

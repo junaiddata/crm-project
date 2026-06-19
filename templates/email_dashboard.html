@@ -116,93 +116,79 @@
     }
     .date-clear:hover { color: #ef4444; }
 
-    /* ── Feed ── */
-    .feed { flex: 1; padding: 0 28px 32px; display: flex; flex-direction: column; gap: 10px; }
-
-    .conv-card {
-      background: #fff; border-radius: 12px;
+    /* ── Inbox (Gmail-style list) ── */
+    .inbox {
+      margin: 0 28px 32px; background: #fff; border-radius: 12px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
-      overflow: hidden; transition: box-shadow 0.15s;
-      border-left: 4px solid #f59e0b;
+      overflow: hidden;
     }
-    .conv-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
-    .conv-card.is-replied { border-left-color: #e2e8f0; }
+    .inbox-item { border-bottom: 1px solid #f1f5f9; }
+    .inbox-item:last-child { border-bottom: none; }
 
-    .card-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 0; }
-    .sender-row { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    .inbox-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 18px; height: 52px; cursor: pointer;
+      position: relative; transition: background 0.12s;
+    }
+    .inbox-row:hover { background: #f8fafc; box-shadow: inset 3px 0 0 #93c5fd; }
+    /* Unread (still needs/awaiting reply) → bold + blue accent bar */
+    .inbox-row.unread { box-shadow: inset 3px 0 0 #1d4ed8; }
+    .inbox-row.unread:hover { box-shadow: inset 3px 0 0 #1d4ed8; background: #f8fafc; }
+
+    .row-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 14px; text-transform: uppercase;
+      font-weight: 800; font-size: 13px; text-transform: uppercase;
       background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff;
       letter-spacing: -0.5px;
     }
-    .conv-card.is-replied .avatar { background: #e2e8f0; color: #94a3b8; }
-    .sender-info { display: flex; flex-direction: column; gap: 1px; }
-    .sender-num {
-      font-size: 14.5px; font-weight: 700; color: #0f172a;
-      text-decoration: none; transition: color 0.12s;
-    }
-    .sender-num:hover { color: #2563eb; }
-    .sender-meta { font-size: 11.5px; color: #94a3b8; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .msg-count-chip {
-      display: inline-flex; align-items: center;
-      background: #f1f5f9; color: #475569; border-radius: 4px;
-      padding: 1px 6px; font-size: 11px; font-weight: 600;
-    }
+    .inbox-row:not(.unread) .row-avatar { background: #e2e8f0; color: #94a3b8; }
 
-    .status-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
-      flex-shrink: 0;
+    .row-sender {
+      flex-shrink: 0; width: 190px; font-size: 13.5px; color: #475569;
+      font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .badge-new      { background: #fef3c7; color: #92400e; }
-    .badge-replied  { background: #dbeafe; color: #1e40af; }
-    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .inbox-row.unread .row-sender { color: #0f172a; font-weight: 700; }
 
-    /* ── Message preview ── */
-    .card-messages { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; }
-    .msg-subject { font-size: 13px; font-weight: 700; color: #1e293b; }
-    .msg-bubble {
-      font-size: 13.5px; color: #334155; line-height: 1.6;
-      background: #f8fafc; border-radius: 0 8px 8px 8px;
-      padding: 9px 14px;
-      border-left: 3px solid #3b82f6;
-      word-break: break-word;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    .row-body {
+      flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .conv-card.is-replied .msg-bubble { border-left-color: #e2e8f0; color: #64748b; background: #fafafa; }
-    .att-chip {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
-      border-radius: 5px; padding: 1px 8px; font-size: 11px; font-weight: 600;
-    }
+    .row-subject { font-size: 13px; color: #334155; flex-shrink: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+    .inbox-row.unread .row-subject { color: #0f172a; font-weight: 700; }
+    .row-snippet { font-size: 12.5px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; }
 
-    /* ── Action bar ── */
-    .card-actions {
-      display: flex; align-items: center; gap: 6px;
-      padding: 10px 18px 14px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;
+    .row-meta {
+      flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: #94a3b8; font-weight: 600;
     }
-    .action-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 6px 13px; border-radius: 7px; font-size: 12px; font-weight: 600;
-      border: 1px solid transparent; cursor: pointer; font-family: inherit;
-      transition: all 0.15s; text-decoration: none; white-space: nowrap;
+    .inbox-row.unread .row-meta { color: #1d4ed8; }
+    .row-count {
+      background: #eef2f7; color: #475569; border-radius: 10px;
+      padding: 1px 7px; font-size: 10.5px; font-weight: 700;
     }
-    .btn-view-chat  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-    .btn-view-chat:hover { background: #dbeafe; border-color: #93c5fd; }
-    .btn-add-lead   { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-    .btn-add-lead:hover { background: #d1fae5; border-color: #6ee7b7; }
-    .btn-reply      { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
-    .btn-reply:hover { background: #1e40af; border-color: #1e40af; }
-    .btn-undo       { background: transparent; color: #94a3b8; border-color: #e2e8f0; }
-    .btn-undo:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+    .row-clip { color: #94a3b8; display: inline-flex; }
 
-    /* ── Reply compose box ── */
-    .reply-box { display: none; padding: 0 18px 16px; }
+    /* Hover action icons replace the date column, Gmail-style */
+    .row-actions {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      display: none; align-items: center; gap: 4px;
+      background: #f8fafc; padding-left: 10px;
+    }
+    .inbox-row:hover .row-actions { display: flex; }
+    .inbox-row:hover .row-meta   { visibility: hidden; }
+    .icon-btn {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid #e2e8f0;
+      background: #fff; color: #475569; cursor: pointer; display: inline-flex;
+      align-items: center; justify-content: center; transition: all 0.13s;
+    }
+    .icon-btn:hover { color: #1d4ed8; border-color: #93c5fd; background: #eff6ff; }
+    .icon-btn.reply:hover { color: #fff; background: #1d4ed8; border-color: #1d4ed8; }
+    .icon-btn.lead:hover  { color: #047857; background: #ecfdf5; border-color: #6ee7b7; }
+    .icon-btn.undo:hover  { color: #ef4444; background: #fef2f2; border-color: #fecaca; }
+
+    /* ── Reply compose box (expands under a row) ── */
+    .reply-box { display: none; padding: 4px 18px 16px 64px; }
     .reply-box.open { display: block; }
     .reply-box-inner {
       background: #f8fafc; border: 1.5px solid #bfdbfe;
@@ -270,6 +256,12 @@
       animation: slideUp 0.22s ease;
     }
     @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    @media (max-width: 720px) {
+      .row-sender { width: 120px; }
+      .row-subject { max-width: 50%; }
+      .reply-box { padding-left: 18px; }
+    }
   </style>
 </head>
 <body>
@@ -281,7 +273,7 @@
          style="height:38px; object-fit:contain; max-width:130px; display:block;">
     <div>
       <div class="header-title">Email Manager</div>
-      <div class="header-sub">{% if cfg.email_address %}{{ cfg.email_address }} · {% endif %}{{ total }} email{{ total|pluralize }} · {{ unreplied }} pending</div>
+      <div class="header-sub">{% if cfg.email_address %}{{ cfg.email_address }} · {% endif %}{{ total }} email{{ total|pluralize }}</div>
     </div>
   </div>
   <div class="header-right">
@@ -330,12 +322,6 @@
     </div>
     <div><div class="stat-val">{{ week_count }}</div><div class="stat-lbl">This week</div></div>
   </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#fef3c7;color:#b45309;">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-    </div>
-    <div><div class="stat-val">{{ unreplied }}</div><div class="stat-lbl">Needs reply</div></div>
-  </div>
 </div>
 
 <!-- Controls -->
@@ -370,10 +356,6 @@
        class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
       All <span class="tab-count">{{ total }}</span>
     </a>
-    <a href="?filter=unreplied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
-       class="filter-tab {% if active_filter == 'unreplied' %}active{% endif %}">
-      Needs reply <span class="tab-count">{{ unreplied }}</span>
-    </a>
     <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
       Replied <span class="tab-count">{{ replied_count }}</span>
@@ -383,71 +365,56 @@
   <div class="controls-right">{{ shown_count }} sender{{ shown_count|pluralize }} shown</div>
 </div>
 
-<!-- Email feed -->
+<!-- Inbox list (Gmail-style) -->
 {% if groups %}
-<div class="feed">
+<div class="inbox">
   {% for group in groups %}
   {% with gid=group.reply_pk %}
+  <div class="inbox-item">
 
-  <div class="conv-card {% if group.all_replied %}is-replied{% endif %}" id="card-{{ gid }}">
+    <div class="inbox-row {% if group.any_unreplied %}unread{% endif %}"
+         onclick="window.location.href='/emails/thread/{{ group.counterpart|urlencode }}/'">
+      <div class="row-avatar">{{ group.counterpart|slice:":2" }}</div>
 
-    <div class="card-top">
-      <div class="sender-row">
-        <div class="avatar">{{ group.counterpart|slice:":2" }}</div>
-        <div class="sender-info">
-          <a class="sender-num" href="/emails/thread/{{ group.counterpart|urlencode }}/">
-            {% if group.counterpart_name %}{{ group.counterpart_name }}{% else %}{{ group.counterpart }}{% endif %}
-          </a>
-          <div class="sender-meta">
-            {% if group.counterpart_name %}{{ group.counterpart }} · {% endif %}{{ group.first_time|date:"d M Y · H:i" }}
-            {% if group.count > 1 %}<span class="msg-count-chip">{{ group.count }} emails</span>{% endif %}
-          </div>
-        </div>
+      <div class="row-sender">{% if group.counterpart_name %}{{ group.counterpart_name }}{% else %}{{ group.counterpart }}{% endif %}</div>
+
+      <div class="row-body">
+        {% if group.latest.subject %}<span class="row-subject">{{ group.latest.subject }}</span>{% endif %}
+        <span class="row-snippet">{{ group.latest.body|default:"(no text)"|truncatechars:160 }}</span>
       </div>
-      <span class="status-badge {% if group.all_replied %}badge-replied{% else %}badge-new{% endif %}" id="badge-{{ gid }}">
-        <span class="badge-dot" style="background:{% if group.all_replied %}#3b82f6{% else %}#f59e0b{% endif %};"></span>
-        {% if group.all_replied %}Replied{% else %}New{% endif %}
-      </span>
-    </div>
 
-    <!-- Latest email preview -->
-    <div class="card-messages">
-      {% with msg=group.latest %}
-      {% if msg.subject %}<div class="msg-subject">{{ msg.subject }}</div>{% endif %}
-      <div class="msg-bubble">{{ msg.body|default:"(no text)"|truncatechars:400 }}</div>
-      {% if msg.attachments.all %}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        {% for att in msg.attachments.all %}
-        <span class="att-chip">📎 {{ att.filename }}</span>
-        {% endfor %}
+      <div class="row-meta">
+        {% if group.latest.attachments.all %}
+        <span class="row-clip" title="Has attachments">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/></svg>
+        </span>
+        {% endif %}
+        {% if group.count > 1 %}<span class="row-count">{{ group.count }}</span>{% endif %}
+        <span>{{ group.first_time|date:"M j" }}</span>
       </div>
-      {% endif %}
-      {% endwith %}
-    </div>
 
-    <!-- Action bar -->
-    <div class="card-actions" id="actions-{{ gid }}">
-      <a href="/emails/thread/{{ group.counterpart|urlencode }}/" class="action-btn btn-view-chat">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
-        View Thread
-      </a>
-      <button class="action-btn btn-add-lead" onclick="addToLeads(this)"
-        data-email="{{ group.counterpart }}"
-        data-name="{{ group.counterpart_name }}"
-        data-date="{{ group.latest.received_at|date:'Y-m-d' }}"
-        data-subject="{{ group.latest.subject }}"
-        data-body="{{ group.latest.body|truncatechars:1500 }}">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 00-6 6 1 1 0 001 1h10a1 1 0 001-1 6 6 0 00-6-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
-        Add to Leads
-      </button>
-      {% if group.any_unreplied %}
-      <button class="action-btn btn-reply" onclick="openReply({{ gid }})">
-        <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-        Quick Reply
-      </button>
-      {% else %}
-      <button class="action-btn btn-undo" onclick="undoReply({{ gid }}, [{{ group.all_ids|join:',' }}])">↩ Mark as new</button>
-      {% endif %}
+      <div class="row-actions">
+        {% if group.any_unreplied %}
+        <button class="icon-btn reply" title="Quick reply" onclick="event.stopPropagation(); openReply({{ gid }})">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </button>
+        {% else %}
+        <button class="icon-btn undo" title="Mark as new" onclick="event.stopPropagation(); undoReply({{ gid }}, [{{ group.all_ids|join:',' }}])">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </button>
+        {% endif %}
+        <button class="icon-btn lead" title="Add to Leads" onclick="event.stopPropagation(); addToLeads(this)"
+          data-email="{{ group.counterpart }}"
+          data-name="{{ group.counterpart_name }}"
+          data-date="{{ group.latest.received_at|date:'Y-m-d' }}"
+          data-subject="{{ group.latest.subject }}"
+          data-body="{{ group.latest.body|truncatechars:1500 }}">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 00-6 6 1 1 0 001 1h10a1 1 0 001-1 6 6 0 00-6-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+        </button>
+        <a class="icon-btn" title="Open thread" href="/emails/thread/{{ group.counterpart|urlencode }}/" onclick="event.stopPropagation()">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
+        </a>
+      </div>
     </div>
 
     <!-- Reply compose -->
@@ -480,7 +447,7 @@
 <div class="empty-wrap">
   <div class="empty-state">
     <svg width="52" height="52" viewBox="0 0 20 20" fill="#cbd5e1"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
-    <p>{% if search %}No emails match "{{ search }}"{% elif active_filter == 'unreplied' %}All caught up — no pending emails{% elif active_filter == 'replied' %}No replied emails yet{% else %}No emails yet — they appear automatically once the mailbox is configured{% endif %}</p>
+    <p>{% if search %}No emails match "{{ search }}"{% elif active_filter == 'replied' %}No replied emails yet{% else %}No emails yet — they appear automatically once the mailbox is configured{% endif %}</p>
   </div>
 </div>
 {% endif %}
