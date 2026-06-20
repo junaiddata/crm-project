@@ -19,6 +19,11 @@ def landing(request):
     return render(request, 'landing.html', {'alabama_url': settings.ALABAMA_URL})
 
 
+def alabama_landing(request):
+    """Alabama (sister company) portal, served at /alabama/ on the same site."""
+    return render(request, 'alabama_landing.html')
+
+
 @login_required
 def crm_index(request):
     return render(request, 'crm/index.html')
@@ -58,5 +63,6 @@ urlpatterns = [
     path('emails/thread/<str:address>/', email_thread, name='email-thread'),
     path('calls/', calls_dashboard, name='calls-dashboard'),
     path('call-leads/', call_leads_dashboard, name='call-leads'),
+    path('alabama/', alabama_landing, name='alabama'),
     path('', landing, name='home'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
