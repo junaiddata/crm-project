@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Call Tracker App — Android</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      color: #0f172a; background: #fff; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0; padding: 0 40px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-link { font-size: 14px; color: #475569; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; }
+    .nav-link:hover { color: #1d4ed8; background: #eff6ff; }
+    .btn-nav-cta {
+      background: #1d4ed8; color: #fff; padding: 9px 20px; border-radius: 8px;
+      font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: background 0.15s, box-shadow 0.15s;
+      display: inline-flex; align-items: center; gap: 7px;
+    }
+    .btn-nav-cta:hover { background: #1e40af; box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(160deg, #0c2340 0%, #1a3a5c 55%, #1e4d8c 100%);
+      padding: 70px 40px 90px; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 75% 10%, rgba(59,130,246,0.22) 0%, transparent 60%),
+                  radial-gradient(ellipse at 5% 100%, rgba(29,78,216,0.18) 0%, transparent 55%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      max-width: 1100px; margin: 0 auto; position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35);
+      color: #93c5fd; font-size: 12.5px; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px; margin-bottom: 22px; letter-spacing: 0.02em;
+    }
+    .hero-badge svg { width: 14px; height: 14px; }
+    .hero h1 {
+      font-size: clamp(32px, 4.5vw, 52px); font-weight: 800; color: #fff;
+      letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 18px;
+    }
+    .hero h1 span { color: #60a5fa; }
+    .hero-sub { font-size: 17px; color: #94b8d8; max-width: 460px; margin-bottom: 32px; line-height: 1.6; }
+
+    .download-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+    .btn-download {
+      background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff;
+      padding: 15px 26px; border-radius: 12px; font-size: 16px; font-weight: 700;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 28px rgba(34,197,94,0.4); transition: all 0.15s;
+    }
+    .btn-download:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(34,197,94,0.55); }
+    .btn-download svg { width: 26px; height: 26px; flex-shrink: 0; }
+    .btn-download .dl-small { font-size: 11px; font-weight: 600; opacity: 0.85; display: block; line-height: 1.1; }
+    .btn-download .dl-big { font-size: 16px; font-weight: 700; display: block; line-height: 1.2; }
+
+    .qr-box {
+      background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      text-align: center; flex-shrink: 0;
+    }
+    .qr-box img { display: block; width: 96px; height: 96px; border-radius: 6px; }
+    .qr-box span { font-size: 10px; font-weight: 600; color: #64748b; display: block; margin-top: 4px; }
+
+    .hero-meta { display: flex; gap: 22px; flex-wrap: wrap; }
+    .hero-meta-item { display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 13px; font-weight: 500; }
+    .hero-meta-item svg { width: 16px; height: 16px; color: #60a5fa; }
+
+    /* ── Phone mockup ── */
+    .phone-wrap { display: flex; justify-content: center; }
+    .phone {
+      width: 290px; height: 590px; background: #0b1220; border-radius: 42px;
+      padding: 12px; box-shadow: 0 30px 70px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.08);
+      position: relative;
+    }
+    .phone::after {
+      content: ''; position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 24px; background: #0b1220; border-radius: 0 0 16px 16px; z-index: 5;
+    }
+    .phone-screen {
+      width: 100%; height: 100%; background: #f1f5f9; border-radius: 32px; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .app-status { background: #0c2340; color: #fff; font-size: 11px; padding: 8px 18px 6px;
+      display: flex; justify-content: space-between; align-items: center; }
+    .app-header {
+      background: linear-gradient(135deg, #0c2340, #1e4d8c); color: #fff; padding: 10px 16px 16px;
+    }
+    .app-header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .app-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#3b82f6,#60a5fa);
+      display: flex; align-items: center; justify-content: center; }
+    .app-title { font-size: 15px; font-weight: 700; }
+    .app-stats { display: flex; gap: 10px; }
+    .app-stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 10px; }
+    .app-stat-num { font-size: 18px; font-weight: 800; line-height: 1; }
+    .app-stat-lbl { font-size: 9.5px; color: #93c5fd; margin-top: 3px; }
+    .app-list { flex: 1; overflow: hidden; padding: 14px; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
+    .dash-label { font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
+    .dash-card { background: #fff; border: 1px solid #e8edf3; border-radius: 14px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    .dash-big { display: flex; align-items: baseline; gap: 7px; }
+    .dash-big-num { font-size: 36px; font-weight: 800; color: #0f172a; line-height: 1; letter-spacing: -0.02em; }
+    .dash-big-lbl { font-size: 12.5px; color: #64748b; font-weight: 500; }
+    .dash-item { margin-top: 12px; }
+    .dash-item:first-of-type { margin-top: 4px; }
+    .dash-row { display: flex; align-items: center; gap: 10px; }
+    .dash-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .dash-ico svg { width: 15px; height: 15px; }
+    .dash-row-lbl { font-size: 12.5px; font-weight: 600; color: #334155; flex: 1; }
+    .dash-row-val { font-size: 13px; font-weight: 800; color: #0f172a; }
+    .dash-bar { height: 6px; border-radius: 4px; background: #eef2f7; overflow: hidden; margin-top: 6px; }
+    .dash-bar > span { display: block; height: 100%; border-radius: 4px; }
+    .dash-synced { display: flex; align-items: center; gap: 11px; }
+    .dash-synced-ico { width: 38px; height: 38px; border-radius: 50%; background: #dcfce7; color: #16a34a;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .dash-synced-ico svg { width: 20px; height: 20px; }
+    .dash-synced-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .dash-synced-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .app-sync {
+      background: #dcfce7; color: #166534; font-size: 11px; font-weight: 600;
+      padding: 9px 16px; display: flex; align-items: center; gap: 7px; border-top: 1px solid #bbf7d0;
+    }
+    .app-sync svg { width: 14px; height: 14px; }
+    .app-nav { background: #fff; border-top: 1px solid #e2e8f0; display: flex; padding: 8px 0 12px; }
+    .app-nav-item { flex: 1; text-align: center; font-size: 9.5px; color: #94a3b8; }
+    .app-nav-item.active { color: #1d4ed8; font-weight: 700; }
+    .app-nav-item svg { width: 18px; height: 18px; display: block; margin: 0 auto 2px; }
+
+    /* ── Steps ── */
+    section { padding: 76px 40px; }
+    .section-inner { max-width: 1000px; margin: 0 auto; }
+    .section-tag { font-size: 12px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .section-title { font-size: clamp(24px, 3vw, 34px); font-weight: 800; letter-spacing: -0.025em; color: #0f172a; margin-bottom: 12px; }
+    .section-sub { font-size: 15.5px; color: #64748b; max-width: 520px; }
+
+    .install-section { background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 46px; }
+    .step-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px 20px; position: relative; }
+    .step-num {
+      width: 36px; height: 36px; border-radius: 10px; background: #1d4ed8; color: #fff;
+      font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
+    }
+    .step-card h4 { font-size: 14.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .step-card p { font-size: 13px; color: #64748b; line-height: 1.55; }
+
+    /* ── Features ── */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 46px; }
+    .feature-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px 24px; transition: all 0.2s; }
+    .feature-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 30px rgba(29,78,216,0.08); transform: translateY(-2px); background: #fff; }
+    .feature-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+    .feature-icon svg { width: 22px; height: 22px; }
+    .feature-card h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 7px; }
+    .feature-card p { font-size: 13.5px; color: #64748b; line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta-section { background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%); padding: 76px 40px; text-align: center; }
+    .cta-section h2 { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.025em; margin-bottom: 12px; }
+    .cta-section p { font-size: 15.5px; color: #94b8d8; margin-bottom: 32px; }
+
+    footer { background: #0f172a; padding: 30px 40px; text-align: center; color: #475569; font-size: 13px; }
+    footer a { color: #3b82f6; text-decoration: none; }
+
+    .warn-note {
+      max-width: 1000px; margin: 0 auto; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 12px; padding: 16px 20px; display: flex; gap: 12px; align-items: flex-start;
+      font-size: 13.5px; color: #92400e; line-height: 1.55;
+    }
+    .warn-note svg { width: 20px; height: 20px; flex-shrink: 0; color: #d97706; margin-top: 1px; }
+
+    @media (max-width: 920px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 48px; text-align: center; }
+      .hero-badge, .download-row, .hero-meta { justify-content: center; }
+      .hero-sub { margin-left: auto; margin-right: auto; }
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      nav { padding: 0 20px; }
+    }
+    @media (max-width: 560px) {
+      .hero { padding: 48px 20px 64px; }
+      section { padding: 52px 20px; }
+      .steps-grid, .features-grid { grid-template-columns: 1fr; }
+      .nav-right .nav-link { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/" class="nav-brand">
+      <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+           alt="Company Logo" style="height:40px; object-fit:contain; max-width:150px; display:block;">
+    </a>
+    <div class="nav-right">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/crm/" class="nav-link">Leads</a>
+      <a href="#install" class="nav-link">How to install</a>
+      <a href="#download-top" class="btn-nav-cta">
+        <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.707a1 1 0 010-1.414L9 5.586V3a1 1 0 112 0v2.586l2.707-2.879a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4z" clip-rule="evenodd"/></svg>
+        Download
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="download-top">
+    <div class="hero-grid">
+
+      <!-- Left: copy + download -->
+      <div>
+        <div class="hero-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 00-.83.22l-1.88 3.24a11.43 11.43 0 00-8.94 0L5.65 5.67a.643.643 0 00-.87-.22c-.28.18-.37.54-.22.85L6.4 9.48A10.81 10.81 0 001 18h22a10.81 10.81 0 00-5.4-8.52zM7 15.25a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5zm10 0a1.25 1.25 0 110-2.5 1.25 1.25 0 010 2.5z"/></svg>
+          Android App · Free Download
+        </div>
+        <h1>Call Tracker —<br><span>every call, auto-logged.</span></h1>
+        <p class="hero-sub">Automatically record every incoming, outgoing and missed call, then sync them straight into your CRM. Install it on any Android phone in seconds.</p>
+
+        <div class="download-row">
+          <a href="/download/app/" class="btn-download" download>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 2h14v2H5v-2z"/></svg>
+            <span>
+              <span class="dl-small">DIRECT APK · ANDROID</span>
+              <span class="dl-big">Download App{% if apk_size %} · {{ apk_size }} MB{% endif %}</span>
+            </span>
+          </a>
+          {% if download_url %}
+          <div class="qr-box">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=0&data={{ download_url|urlencode }}" alt="Scan to download">
+            <span>Scan to install</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="hero-meta">
+          <div class="hero-meta-item">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            Safe &amp; verified
+          </div>
+          <div class="hero-meta-item">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z"/></svg>
+            Android 6.0 and up
+          </div>
+          <div class="hero-meta-item">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            Installs in seconds
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: phone mockup -->
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="app-status"><span>9:41</span><span>📶 🔋 100%</span></div>
+            <div class="app-header">
+              <div class="app-header-top">
+                <div class="app-logo-dot">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4.5 3 3.9 3.5 3.5 4.1 3.5H7.6c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                </div>
+                <div class="app-title">Call Tracker</div>
+              </div>
+              <div class="app-stats">
+                <div class="app-stat"><div class="app-stat-num">24</div><div class="app-stat-lbl">Calls today</div></div>
+                <div class="app-stat"><div class="app-stat-num">5</div><div class="app-stat-lbl">Missed</div></div>
+                <div class="app-stat"><div class="app-stat-num">24</div><div class="app-stat-lbl">Synced</div></div>
+              </div>
+            </div>
+            <div class="app-list">
+              <div class="dash-card">
+                <div class="dash-label" style="margin-bottom:8px;">Calls synced today</div>
+                <div class="dash-big"><span class="dash-big-num">24</span><span class="dash-big-lbl">of 24 calls · 100%</span></div>
+
+                <div class="dash-item">
+                  <div class="dash-row">
+                    <div class="dash-ico" style="background:#dcfce7;color:#16a34a;"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M11 17l-5-5 5-5v3h6v4h-6z"/></svg></div>
+                    <span class="dash-row-lbl">Incoming</span><span class="dash-row-val">12</span>
+                  </div>
+                  <div class="dash-bar"><span style="width:50%;background:#16a34a;"></span></div>
+                </div>
+
+                <div class="dash-item">
+                  <div class="dash-row">
+                    <div class="dash-ico" style="background:#dbeafe;color:#2563eb;"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 3l5 5-5 5V10H3V6h6z"/></svg></div>
+                    <span class="dash-row-lbl">Outgoing</span><span class="dash-row-val">7</span>
+                  </div>
+                  <div class="dash-bar"><span style="width:29%;background:#2563eb;"></span></div>
+                </div>
+
+                <div class="dash-item">
+                  <div class="dash-row">
+                    <div class="dash-ico" style="background:#fee2e2;color:#dc2626;"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg></div>
+                    <span class="dash-row-lbl">Missed</span><span class="dash-row-val">5</span>
+                  </div>
+                  <div class="dash-bar"><span style="width:21%;background:#dc2626;"></span></div>
+                </div>
+              </div>
+
+              <div class="dash-card dash-synced">
+                <div class="dash-synced-ico">
+                  <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </div>
+                <div>
+                  <div class="dash-synced-title">All calls synced to CRM</div>
+                  <div class="dash-synced-sub">Last sync · just now</div>
+                </div>
+              </div>
+            </div>
+            <div class="app-nav">
+              <div class="app-nav-item active"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>Calls</div>
+              <div class="app-nav-item"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>Leads</div>
+              <div class="app-nav-item"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.53 1.53 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.53 1.53 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>Settings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- How to install -->
+  <section class="install-section" id="install">
+    <div class="section-inner">
+      <div class="section-tag">Installation</div>
+      <h2 class="section-title">Install in 4 easy steps</h2>
+      <p class="section-sub">Because it's installed directly (not via Play Store), Android asks for one quick permission the first time.</p>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h4>Tap Download</h4>
+          <p>Hit the green “Download App” button above — or scan the QR code with your phone camera.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h4>Open the file</h4>
+          <p>Once downloaded, open <strong>CallTracker.apk</strong> from your notifications or Downloads folder.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h4>Allow install</h4>
+          <p>If prompted, tap <strong>Settings → Allow from this source</strong>, then go back and tap Install.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <h4>Open &amp; sign in</h4>
+          <p>Launch the app, grant call-log permission, and your calls start syncing to the CRM automatically.</p>
+        </div>
+      </div>
+
+      <div class="warn-note" style="margin-top:36px;">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <div><strong>“Unknown sources” is normal.</strong> Android shows this warning for any app installed outside the Play Store. This is our official app — it's safe to allow and install.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="section-inner">
+      <div class="section-tag">Why you'll love it</div>
+      <h2 class="section-title">Built for your sales team</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+          </div>
+          <h3>Automatic call logging</h3>
+          <p>Every incoming, outgoing and missed call is captured automatically — no manual entry, nothing forgotten.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#f0fdf4; color:#16a34a;">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+          </div>
+          <h3>Syncs to your CRM</h3>
+          <p>Calls flow straight into the Leads dashboard, so follow-ups and customer history stay in one place.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:#faf5ff; color:#7c3aed;">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <h3>Missed-call follow-ups</h3>
+          <p>Missed calls are flagged instantly so your team can call back fast and never lose a hot lead.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>Get the app now</h2>
+    <p>Free, lightweight{% if apk_size %} ({{ apk_size }} MB){% endif %}, and ready in under a minute.</p>
+    <a href="/download/app/" class="btn-download" style="display:inline-flex;" download>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 2h14v2H5v-2z"/></svg>
+      <span>
+        <span class="dl-small">DIRECT APK · ANDROID</span>
+        <span class="dl-big">Download Call Tracker</span>
+      </span>
+    </a>
+  </section>
+
+  <footer>
+    <p>Call Tracker App &nbsp;·&nbsp; by Junaid World &nbsp;·&nbsp; <a href="/">Back to home</a></p>
+  </footer>
+
+</body>
+</html>

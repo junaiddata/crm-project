@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Broadcast · WhatsApp Manager</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #f0f4f8; color: #1e293b; }
+    header { background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+             color: #fff; padding: 14px 22px; display: flex; align-items: center;
+             justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.8); }
+    .header-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px;
+                   text-decoration: none; color: #fff; background: rgba(255,255,255,0.22);
+                   padding: 7px 13px; border-radius: 8px; }
+    .wrap { max-width: 640px; margin: 28px auto; padding: 0 18px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 6px; color: #334155; }
+    label:first-of-type { margin-top: 0; }
+    input[type=text], input[type=file], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+      font-size: 14px; font-family: inherit; background: #fff; }
+    textarea { resize: vertical; min-height: 64px; }
+    .hint { font-size: 12px; color: #64748b; margin-top: 5px; }
+    .btn { margin-top: 22px; width: 100%; padding: 12px; border: none; border-radius: 8px;
+           background: #047857; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .btn:hover { background: #065f46; }
+    .alert { padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 18px; }
+    .alert-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .alert-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .result-num { font-size: 26px; font-weight: 800; }
+    .errlist { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: #991b1b; }
+    .note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 12.5px;
+            padding: 10px 12px; border-radius: 8px; margin-top: 18px; }
+    /* progress card */
+    .prog-title { font-size: 17px; font-weight: 800; color: #065f46; }
+    .prog-sub { font-size: 13px; color: #64748b; margin-top: 3px; }
+    .prog-bar-wrap { height: 12px; background: #e2e8f0; border-radius: 8px; overflow: hidden; margin: 18px 0 10px; }
+    .prog-bar { height: 100%; width: 0; background: linear-gradient(90deg,#10b981,#047857);
+                border-radius: 8px; transition: width 0.4s ease; }
+    .prog-stats { display: flex; gap: 18px; font-size: 14px; }
+    .prog-stats b { font-size: 22px; font-weight: 800; display: block; }
+    .prog-stats .s-sent b { color: #047857; }
+    .prog-stats .s-failed b { color: #dc2626; }
+    .prog-stats .s-total b { color: #334155; }
+    .prog-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #a7f3d0;
+                    border-top-color: #047857; border-radius: 50%; animation: spin 0.8s linear infinite;
+                    vertical-align: middle; margin-right: 7px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-secondary { display: inline-block; margin-top: 18px; padding: 11px 18px; border-radius: 8px;
+                     background: #065f46; color: #fff; font-weight: 700; text-decoration: none; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Company Logo"
+         style="height:38px; object-fit:contain; max-width:130px; display:block;">
+    <div>
+      <div class="header-title">Broadcast</div>
+      <div class="header-sub">Send an approved template to a list of numbers</div>
+    </div>
+  </div>
+  <a href="/whatsapp/" class="header-link">← WhatsApp Manager</a>
+</header>
+
+<div class="wrap">
+  {% if job %}
+    <!-- Live progress: broadcast runs in the background; this card polls for status -->
+    <div class="card" id="progCard" data-job="{{ job.id }}" data-total="{{ job.total }}">
+      <div class="prog-title"><span class="prog-spinner" id="progSpin"></span><span id="progHead">Sending broadcast…</span></div>
+      <div class="prog-sub">From {{ job.label }} · {{ job.total }} recipient{{ job.total|pluralize }} · one message per number. You can leave this page — sending continues.</div>
+      <div class="prog-bar-wrap"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-stats">
+        <div class="s-sent"><b id="statSent">0</b>sent</div>
+        <div class="s-failed"><b id="statFailed">0</b>failed</div>
+        <div class="s-total"><b>{{ job.total }}</b>total</div>
+      </div>
+      <div id="progErrors"></div>
+      <a href="/whatsapp/broadcast/" class="btn-secondary" id="progNew" style="display:none;">Send another broadcast</a>
+    </div>
+  {% else %}
+
+  {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <label for="template">Template name</label>
+      <input type="text" id="template" name="template" value="{{ template }}"
+             placeholder="plumbing_marketing" required>
+      <div class="hint">The exact approved template name from WhatsApp Manager.</div>
+
+      <label for="csv">Recipients CSV</label>
+      <input type="file" id="csv" name="csv" accept=".csv,text/csv" required>
+      <div class="hint">Phone number in the first column (with or without +). Header row is skipped.</div>
+
+      <label for="image">Header image <span style="font-weight:400;color:#64748b;">(only if the template has one)</span></label>
+      <input type="file" id="image" name="image" accept="image/*">
+      <div class="hint">Uploaded to WhatsApp and shown in the chat thread.</div>
+
+      <label for="caption">Chat caption <span style="font-weight:400;color:#64748b;">(optional)</span></label>
+      <textarea id="caption" name="caption" placeholder="Text shown under the broadcast in the chat (use the template wording).">{{ caption }}</textarea>
+
+      <label for="phone_id">Send from</label>
+      <select id="phone_id" name="phone_id">
+        {% for n in numbers_choices %}
+          <option value="{{ n.id }}"
+            {% if selected_phone_id %}{% if n.id == selected_phone_id %}selected{% endif %}
+            {% elif n.id == default_phone_id %}selected{% endif %}>{{ n.label }}</option>
+        {% endfor %}
+      </select>
+
+      <label for="language">Language</label>
+      <input type="text" id="language" name="language" value="{{ language }}" placeholder="en">
+
+      <button type="submit" class="btn">Send broadcast</button>
+    </form>
+
+    <div class="note">
+      ⚠ Marketing templates are billed per delivered message and should only go to
+      recipients who opted in. Test with a small CSV first.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if job %}
+<script>
+  (function () {
+    const card  = document.getElementById('progCard');
+    const jobId = card.dataset.job;
+    const total = parseInt(card.dataset.total, 10) || 0;
+    const bar   = document.getElementById('progBar');
+    const sentEl = document.getElementById('statSent');
+    const failEl = document.getElementById('statFailed');
+    const head   = document.getElementById('progHead');
+    const spin   = document.getElementById('progSpin');
+    const errBox = document.getElementById('progErrors');
+    const newBtn = document.getElementById('progNew');
+
+    async function poll() {
+      let data;
+      try {
+        const res = await fetch('/whatsapp/broadcast/status/' + jobId + '/');
+        data = await res.json();
+      } catch {
+        setTimeout(poll, 2500);
+        return;
+      }
+
+      const done = data.sent + data.failed;
+      sentEl.textContent = data.sent;
+      failEl.textContent = data.failed;
+      bar.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+
+      if (data.status === 'running') {
+        setTimeout(poll, 1500);
+        return;
+      }
+
+      // Finished (done or error)
+      spin.style.display = 'none';
+      newBtn.style.display = 'inline-block';
+
+      if (data.status === 'error') {
+        head.textContent = '⚠ Broadcast failed';
+        head.style.color = '#dc2626';
+        errBox.innerHTML = '<div class="alert alert-error" style="margin-top:16px;">' +
+          (data.message || 'Something went wrong.') + '</div>';
+        return;
+      }
+
+      bar.style.width = '100%';
+      head.textContent = '✓ Broadcast complete';
+      if (data.failed && data.errors && data.errors.length) {
+        let html = '<ul class="errlist">';
+        data.errors.forEach(n => { html += '<li>' + n + '</li>'; });
+        if (data.more_errors) html += '<li>…and ' + data.more_errors + ' more</li>';
+        html += '</ul>';
+        errBox.innerHTML = '<div class="prog-sub" style="margin-top:14px;font-weight:600;color:#991b1b;">Failed numbers:</div>' + html;
+      }
+    }
+    poll();
+  })();
+</script>
+{% endif %}
+
+</body>
+</html>

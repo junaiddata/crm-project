@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Manager — Alabama</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+      color: #fff;
+      padding: 0 28px;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.22);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .header-sub   { font-size: 11.5px; color: #93c5fd; margin-top: 1px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-link {
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 7px;
+      border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+      transition: all 0.15s; cursor: pointer; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .header-link:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+    /* ── Config warning banner ── */
+    .config-banner {
+      margin: 16px 28px 0; padding: 12px 18px;
+      background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+      color: #92400e; font-size: 13px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .config-banner a { color: #b45309; font-weight: 700; }
+
+    /* ── Stats strip ── */
+    .stats-strip { display: flex; gap: 12px; padding: 20px 28px 0; }
+    .stat-card {
+      background: #fff; border-radius: 12px; padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px; flex: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+      transition: box-shadow 0.15s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
+    .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
+
+    /* ── Controls ── */
+    .controls { display: flex; align-items: center; gap: 10px; padding: 16px 28px; flex-wrap: wrap; }
+    .search-wrap {
+      display: flex; align-items: center; gap: 7px;
+      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+      padding: 0 12px; height: 38px; min-width: 260px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-wrap:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    .search-wrap svg { color: #94a3b8; flex-shrink: 0; }
+    .search-wrap input {
+      border: none; outline: none; font-size: 13px; width: 100%;
+      background: transparent; color: #0f172a; font-family: inherit;
+    }
+    .search-wrap input::placeholder { color: #94a3b8; }
+
+    .filter-tabs { display: flex; gap: 4px; }
+    .filter-tab {
+      padding: 6px 16px; border-radius: 20px; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; color: #64748b; background: #fff;
+      border: 1px solid #e2e8f0; transition: all 0.15s; white-space: nowrap;
+    }
+    .filter-tab:hover { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+    .filter-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .tab-count {
+      font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+      margin-left: 4px; background: rgba(0,0,0,0.07); color: inherit;
+    }
+    .controls-right { margin-left: auto; font-size: 12px; color: #94a3b8; }
+
+    /* ── Date range filter ── */
+    .date-filter {
+      display: flex; align-items: center; gap: 6px;
+      background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+      padding: 0 10px; height: 38px;
+    }
+    .date-filter-lbl { font-size: 11.5px; font-weight: 600; color: #64748b; }
+    .date-filter input[type=date] {
+      border: none; outline: none; font-family: inherit; font-size: 12.5px;
+      color: #0f172a; background: transparent; height: 24px;
+    }
+    .date-apply {
+      padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      background: #1d4ed8; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .date-apply:hover { background: #1e40af; }
+    .date-clear {
+      font-size: 12px; font-weight: 600; color: #94a3b8;
+      text-decoration: none; padding: 0 4px;
+    }
+    .date-clear:hover { color: #ef4444; }
+
+    /* ── Inbox (Gmail-style list) ── */
+    .inbox {
+      margin: 0 28px 32px; background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .inbox-item { border-bottom: 1px solid #f1f5f9; }
+    .inbox-item:last-child { border-bottom: none; }
+
+    .inbox-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 18px; height: 52px; cursor: pointer;
+      position: relative; transition: background 0.12s;
+    }
+    .inbox-row:hover { background: #f8fafc; box-shadow: inset 3px 0 0 #93c5fd; }
+    /* Unread (still needs/awaiting reply) → bold + blue accent bar */
+    .inbox-row.unread { box-shadow: inset 3px 0 0 #1d4ed8; }
+    .inbox-row.unread:hover { box-shadow: inset 3px 0 0 #1d4ed8; background: #f8fafc; }
+
+    .row-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 13px; text-transform: uppercase;
+      background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff;
+      letter-spacing: -0.5px;
+    }
+    .inbox-row:not(.unread) .row-avatar { background: #e2e8f0; color: #94a3b8; }
+
+    .row-sender {
+      flex-shrink: 0; width: 190px; font-size: 13.5px; color: #475569;
+      font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .inbox-row.unread .row-sender { color: #0f172a; font-weight: 700; }
+
+    .row-body {
+      flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 7px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .row-subject { font-size: 13px; color: #334155; flex-shrink: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+    .inbox-row.unread .row-subject { color: #0f172a; font-weight: 700; }
+    .row-snippet { font-size: 12.5px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; }
+
+    .row-meta {
+      flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: #94a3b8; font-weight: 600;
+    }
+    .inbox-row.unread .row-meta { color: #1d4ed8; }
+    .row-count {
+      background: #eef2f7; color: #475569; border-radius: 10px;
+      padding: 1px 7px; font-size: 10.5px; font-weight: 700;
+    }
+    .row-clip { color: #94a3b8; display: inline-flex; }
+
+    /* Hover action icons replace the date column, Gmail-style */
+    .row-actions {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      display: none; align-items: center; gap: 4px;
+      background: #f8fafc; padding-left: 10px;
+    }
+    .inbox-row:hover .row-actions { display: flex; }
+    .inbox-row:hover .row-meta   { visibility: hidden; }
+    .icon-btn {
+      width: 30px; height: 30px; border-radius: 7px; border: 1px solid #e2e8f0;
+      background: #fff; color: #475569; cursor: pointer; display: inline-flex;
+      align-items: center; justify-content: center; transition: all 0.13s;
+    }
+    .icon-btn:hover { color: #1d4ed8; border-color: #93c5fd; background: #eff6ff; }
+    .icon-btn.reply:hover { color: #fff; background: #1d4ed8; border-color: #1d4ed8; }
+    .icon-btn.lead:hover  { color: #047857; background: #ecfdf5; border-color: #6ee7b7; }
+    .icon-btn.undo:hover  { color: #ef4444; background: #fef2f2; border-color: #fecaca; }
+
+    /* ── Reply compose box (expands under a row) ── */
+    .reply-box { display: none; padding: 4px 18px 16px 64px; }
+    .reply-box.open { display: block; }
+    .reply-box-inner {
+      background: #f8fafc; border: 1.5px solid #bfdbfe;
+      border-radius: 10px; overflow: hidden;
+    }
+    .reply-box-inner:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .reply-box input[type=text] {
+      width: 100%; padding: 9px 14px; border: none; outline: none;
+      border-bottom: 1px solid #e2e8f0; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: #0f172a; background: transparent;
+    }
+    .reply-box textarea {
+      width: 100%; min-height: 90px; padding: 10px 14px; resize: vertical;
+      border: none; outline: none; font-family: inherit;
+      font-size: 13.5px; color: #0f172a; background: transparent; display: block;
+    }
+    .reply-box-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: #eff6ff; border-top: 1px solid #bfdbfe;
+    }
+    .reply-placeholder-hint { font-size: 11.5px; color: #94a3b8; }
+    .reply-btns { display: flex; gap: 6px; }
+    .btn-send-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 16px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      font-family: inherit; transition: background 0.15s;
+    }
+    .btn-send-reply:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-send-reply:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel-reply {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600;
+      background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .btn-cancel-reply:hover { background: #f1f5f9; }
+    .error-msg {
+      font-size: 12px; color: #dc2626; background: #fef2f2;
+      border: 1px solid #fecaca; border-radius: 6px;
+      padding: 7px 12px; margin-top: 8px; display: none;
+    }
+
+    /* ── Empty state ── */
+    .empty-wrap { flex: 1; padding: 0 28px 32px; }
+    .empty-state {
+      background: #fff; border-radius: 12px; text-align: center;
+      padding: 64px 20px; color: #94a3b8;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .empty-state p { font-size: 14px; margin-top: 14px; }
+
+    footer {
+      padding: 14px 28px; text-align: center; font-size: 11.5px;
+      color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
+    }
+    footer a { color: #2563eb; text-decoration: none; }
+    footer code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      padding: 11px 20px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      color: #fff; box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      display: none; align-items: center; gap: 8px;
+      animation: slideUp 0.22s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+    @media (max-width: 720px) {
+      .row-sender { width: 120px; }
+      .row-subject { max-width: 50%; }
+      .reply-box { padding-left: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+         alt="Company Logo"
+         style="height:38px; object-fit:contain; max-width:130px; display:block;">
+    <div>
+      <div class="header-title">Email Manager</div>
+      <div class="header-sub">{% if cfg.email_address %}{{ cfg.email_address }} · {% endif %}{{ total }} email{{ total|pluralize }}</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-link" id="fetch-btn" onclick="fetchNow()">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+      Check mail now
+    </button>
+    <a href="/emails/settings/" class="header-link">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="/" class="header-link" style="background:rgba(255,255,255,0.22);">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+      Home
+    </a>
+  </div>
+</header>
+
+{% if not cfg.is_configured or not cfg.enabled %}
+<div class="config-banner">
+  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+  <span>
+    {% if not cfg.is_configured %}Email integration is not configured yet —{% else %}Email integration is configured but disabled —{% endif %}
+    open <a href="/emails/settings/">Email Settings</a> to add the mailbox details and enable it.
+  </span>
+</div>
+{% endif %}
+
+<!-- Stats strip -->
+<div class="stats-strip">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;color:#1d4ed8;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+    </div>
+    <div><div class="stat-val">{{ total }}</div><div class="stat-lbl">Total emails</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;color:#15803d;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+    </div>
+    <div><div class="stat-val">{{ today_count }}</div><div class="stat-lbl">Today</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+    </div>
+    <div><div class="stat-val">{{ week_count }}</div><div class="stat-lbl">This week</div></div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <form method="get" style="display:contents;">
+    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
+    <div class="date-filter">
+      <span class="date-filter-lbl">From</span>
+      <input type="date" name="from" value="{{ date_from }}">
+      <span class="date-filter-lbl">To</span>
+      <input type="date" name="to" value="{{ date_to }}">
+      <button type="submit" class="date-apply">Apply</button>
+      {% if date_from or date_to %}
+      <a href="?{% if active_filter != 'all' %}filter={{ active_filter }}&{% endif %}{% if search %}q={{ search }}{% endif %}" class="date-clear">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <form method="get" style="display:contents;">
+    {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
+    {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input name="q" value="{{ search }}" placeholder="Search by address, subject or text…" autocomplete="off">
+    </div>
+  </form>
+
+  <div class="filter-tabs">
+    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
+       class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
+      All <span class="tab-count">{{ total }}</span>
+    </a>
+    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
+       class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
+      Replied <span class="tab-count">{{ replied_count }}</span>
+    </a>
+  </div>
+
+  <div class="controls-right">{{ shown_count }} sender{{ shown_count|pluralize }} shown</div>
+</div>
+
+<!-- Inbox list (Gmail-style) -->
+{% if groups %}
+<div class="inbox">
+  {% for group in groups %}
+  {% with gid=group.reply_pk %}
+  <div class="inbox-item">
+
+    <div class="inbox-row {% if group.any_unreplied %}unread{% endif %}"
+         onclick="window.location.href='/emails/thread/{{ group.counterpart|urlencode }}/'">
+      <div class="row-avatar">{{ group.counterpart|slice:":2" }}</div>
+
+      <div class="row-sender">{% if group.counterpart_name %}{{ group.counterpart_name }}{% else %}{{ group.counterpart }}{% endif %}</div>
+
+      <div class="row-body">
+        {% if group.latest.subject %}<span class="row-subject">{{ group.latest.subject }}</span>{% endif %}
+        <span class="row-snippet">{{ group.latest.body|default:"(no text)"|truncatechars:160 }}</span>
+      </div>
+
+      <div class="row-meta">
+        {% if group.latest.attachments.all %}
+        <span class="row-clip" title="Has attachments">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clip-rule="evenodd"/></svg>
+        </span>
+        {% endif %}
+        {% if group.count > 1 %}<span class="row-count">{{ group.count }}</span>{% endif %}
+        <span>{{ group.first_time|date:"M j" }}</span>
+      </div>
+
+      <div class="row-actions">
+        {% if group.any_unreplied %}
+        <button class="icon-btn reply" title="Quick reply" onclick="event.stopPropagation(); openReply({{ gid }})">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </button>
+        {% else %}
+        <button class="icon-btn undo" title="Mark as new" onclick="event.stopPropagation(); undoReply({{ gid }}, [{{ group.all_ids|join:',' }}])">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        </button>
+        {% endif %}
+        <button class="icon-btn lead" title="Add to Leads" onclick="event.stopPropagation(); addToLeads(this)"
+          data-email="{{ group.counterpart }}"
+          data-name="{{ group.counterpart_name }}"
+          data-date="{{ group.latest.received_at|date:'Y-m-d' }}"
+          data-subject="{{ group.latest.subject }}"
+          data-body="{{ group.latest.body|truncatechars:1500 }}">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 00-6 6 1 1 0 001 1h10a1 1 0 001-1 6 6 0 00-6-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+        </button>
+        <a class="icon-btn" title="Open thread" href="/emails/thread/{{ group.counterpart|urlencode }}/" onclick="event.stopPropagation()">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Reply compose -->
+    <div class="reply-box" id="reply-box-{{ gid }}">
+      <div class="reply-box-inner">
+        <input type="text" id="subject-{{ gid }}"
+               value="{% if group.latest.subject %}{% if group.latest.subject|slice:':3'|lower == 're:' %}{{ group.latest.subject }}{% else %}Re: {{ group.latest.subject }}{% endif %}{% endif %}"
+               placeholder="Subject…">
+        <textarea id="textarea-{{ gid }}" placeholder="Type your reply to {{ group.counterpart }}…"></textarea>
+        <div class="reply-box-footer">
+          <span class="reply-placeholder-hint">Sends a real email from your sales mailbox</span>
+          <div class="reply-btns">
+            <button class="btn-cancel-reply" onclick="closeReply({{ gid }})">Cancel</button>
+            <button class="btn-send-reply" id="send-btn-{{ gid }}"
+              onclick="sendReply({{ gid }}, '{{ group.counterpart|escapejs }}')">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+              Send Email
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="err-{{ gid }}"></div>
+    </div>
+
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-wrap">
+  <div class="empty-state">
+    <svg width="52" height="52" viewBox="0 0 20 20" fill="#cbd5e1"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+    <p>{% if search %}No emails match "{{ search }}"{% elif active_filter == 'replied' %}No replied emails yet{% else %}No emails yet — they appear automatically once the mailbox is configured{% endif %}</p>
+  </div>
+</div>
+{% endif %}
+
+<footer>
+  <a href="/">← Home</a> &nbsp;·&nbsp; <a href="/crm/">Leads Dashboard</a>
+  &nbsp;·&nbsp; <a href="/emails/settings/">Email Settings</a>
+  &nbsp;·&nbsp; Fetch: <code>manage.py fetch_emails</code> (cron every 3–5 min)
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  const CSRF = '{{ csrf_token }}';
+
+  // Send this email over to the Leads page (same destination as WhatsApp leads),
+  // carrying the message as query params so the CRM can prefill the new lead.
+  function addToLeads(btn) {
+    const subject = (btn.dataset.subject || '').trim();
+    const body    = (btn.dataset.body || '').trim();
+    const items   = subject ? (body ? subject + '\n' + body : subject) : body;
+    const params  = new URLSearchParams({
+      addLead: '1',
+      platform: 'Email',
+      email: btn.dataset.email || '',
+      name: btn.dataset.name || '',
+      date: btn.dataset.date || '',
+      items: items,
+    });
+    window.location.href = '/crm/?' + params.toString();
+  }
+
+  function openReply(id) {
+    document.getElementById('reply-box-' + id).classList.add('open');
+    document.getElementById('textarea-' + id).focus();
+  }
+
+  function closeReply(id) {
+    document.getElementById('reply-box-' + id).classList.remove('open');
+    document.getElementById('textarea-' + id).value = '';
+    document.getElementById('err-' + id).style.display = 'none';
+  }
+
+  async function sendReply(id, address) {
+    const textarea = document.getElementById('textarea-' + id);
+    const message  = textarea.value.trim();
+    const subject  = document.getElementById('subject-' + id).value.trim();
+    if (!message) { textarea.focus(); return; }
+
+    const btn = document.getElementById('send-btn-' + id);
+    const err = document.getElementById('err-' + id);
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    err.style.display = 'none';
+
+    try {
+      const res  = await fetch('/api/emails/thread/' + encodeURIComponent(address) + '/send/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ subject, message }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.ok) {
+        showToast('Email sent to ' + address, '#2563eb');
+        setTimeout(() => location.reload(), 700);
+      } else {
+        err.textContent = data.error || 'Failed to send — check Email Settings.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Send Email';
+      }
+    } catch {
+      err.textContent = 'Network error — is the server running?';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send Email';
+    }
+  }
+
+  async function undoReply(id, allIds) {
+    const alsoMarkIds = (allIds || []).filter(i => i !== id);
+    const res = await fetch('/api/emails/' + id + '/mark/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ undo: true, also_mark_ids: alsoMarkIds }),
+    });
+    if (res.ok) location.reload();
+  }
+
+  async function fetchNow() {
+    const btn = document.getElementById('fetch-btn');
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      const res  = await fetch('/api/emails/fetch-now/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+      });
+      const data = await res.json();
+      if (data.new > 0) {
+        showToast(data.new + ' new email' + (data.new > 1 ? 's' : ''), '#2563eb');
+        setTimeout(() => location.reload(), 700);
+      } else {
+        showToast(data.info || 'No new emails', '#64748b');
+      }
+    } catch {
+      showToast('Fetch failed — check the server', '#dc2626');
+    }
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg> Check mail now';
+  }
+
+  function showToast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.style.cssText = 'display:flex;background:' + color + ';';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>
