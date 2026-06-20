@@ -141,6 +141,7 @@ def call_leads_dashboard(request):
     from_date = request.GET.get('from_date', '').strip()
     to_date   = request.GET.get('to_date', '').strip()
     search    = request.GET.get('q', '').strip()
+    sim_f     = request.GET.get('sim', '').strip()
 
     qs = CallLead.objects.select_related('call_log').all()
 
@@ -156,6 +157,11 @@ def call_leads_dashboard(request):
     if from_date:  qs = qs.filter(call_time__date__gte=from_date)
     if to_date:    qs = qs.filter(call_time__date__lte=to_date)
     if search:     qs = qs.filter(caller_number__icontains=search)
+    if sim_f:      qs = qs.filter(sim=sim_f)
+
+    # Distinct SIM lines across all leads, for the "number" filter dropdown.
+    all_sims = (CallLead.objects.exclude(sim='')
+                .values_list('sim', flat=True).distinct().order_by('sim'))
 
     today = timezone.now().date()
 
@@ -169,6 +175,8 @@ def call_leads_dashboard(request):
         'from_date':    from_date,
         'to_date':      to_date,
         'search':       search,
+        'all_sims':     all_sims,
+        'active_sim':   sim_f,
     })
 
 

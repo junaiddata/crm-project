@@ -142,9 +142,34 @@ function exportToCSV(leads) {
   URL.revokeObjectURL(url);
 }
 
+function exportToPDF(leads) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert('PDF library is still loading — please try again in a moment.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  const head = [['Date', 'Name', 'Mobile', 'Email', 'Platform', 'Items', 'Sales', 'Quotation', 'Status']];
+  const body = leads.map(l => [
+    l.date || '', l.name || '', l.mobileNo || '', l.emailId || '',
+    l.platform || '', l.items || '', l.salesPerson || '',
+    l.quotation || '', l.leadStatus || '',
+  ]);
+  doc.setFontSize(14); doc.text('Leads Export', 40, 38);
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Generated ' + new Date().toLocaleString() + '  ·  ' + body.length + ' lead(s)', 40, 53);
+  doc.autoTable({
+    head, body, startY: 64,
+    styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
+    headStyles: { fillColor: [17, 24, 39], textColor: 255 },
+    columnStyles: { 3: { cellWidth: 120 }, 5: { cellWidth: 130 } },
+  });
+  doc.save('leads_export_' + todayISO() + '.pdf');
+}
+
 Object.assign(window, {
   CRM_SALESPEOPLE, CRM_PLATFORMS, CRM_LEAD_STATUSES, CRM_PRODUCTS,
   CRM_STATUS_CONFIG, todayISO, formatDateDisplay, getCsrfToken,
   getStoredLeads, createLead, patchLead, removeLead, uploadFile, removeFile,
-  exportToCSV,
+  exportToCSV, exportToPDF,
 });

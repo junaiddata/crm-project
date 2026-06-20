@@ -116,6 +116,11 @@ function CrmApp() {
     showToast('Exported ' + filteredLeads.length + ' leads', 'success');
   }
 
+  function handleExportPDF() {
+    exportToPDF(filteredLeads);
+    showToast('Exported ' + filteredLeads.length + ' leads to PDF', 'success');
+  }
+
   function reloadData() {
     setLoading(true);
     getStoredLeads()
@@ -207,6 +212,10 @@ function CrmApp() {
           <button className="crm-btn crm-btn-outline" onClick={handleExport}>
             <CrmIcon name="download" size={15} />
             Export CSV
+          </button>
+          <button className="crm-btn crm-btn-outline" onClick={handleExportPDF}>
+            <CrmIcon name="download" size={15} />
+            Export PDF
           </button>
           <button className="crm-btn crm-btn-accent" onClick={addLead}>
             <CrmIcon name="plus" size={15} />

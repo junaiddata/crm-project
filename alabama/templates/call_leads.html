@@ -221,12 +221,24 @@
   <form method="get" class="search-box">
     <input type="hidden" name="tab" value="{{ tab }}">
     <input type="text" name="q" value="{{ search }}" placeholder="Search number…" style="width:160px;">
+    <select name="sim" title="Filter by SIM / number"
+            style="height:34px;border:1px solid #cbd5e1;border-radius:6px;padding:0 8px;font-size:13px;color:#0f172a;background:#fff;">
+      <option value="">All numbers</option>
+      {% for s in all_sims %}
+      <option value="{{ s }}" {% if s == active_sim %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
     <input type="date" name="from_date" value="{{ from_date }}" title="From date">
     <input type="date" name="to_date" value="{{ to_date }}" title="To date">
     <button type="submit" class="btn-apply">Filter</button>
-    {% if search or from_date or to_date %}
+    {% if search or from_date or to_date or active_sim %}
     <a href="?tab={{ tab }}" style="color:#64748b;font-size:13px;text-decoration:none;">Clear</a>
     {% endif %}
+    <button type="button" class="btn-apply" onclick="exportCallLeadsPDF()"
+            style="background:#111827;display:inline-flex;align-items:center;gap:5px;">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-2.293a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L11 11.586V3a1 1 0 10-2 0v8.586L6.707 9.293a1 1 0 00-1.414 1.414l4 4z"/></svg>
+      Export PDF
+    </button>
   </form>
 </div>
 
@@ -495,6 +507,52 @@
       showToast(newStatus === 'active' ? 'Restored' : 'Removed from leads');
     });
   }
+
+  // ── Export the currently-filtered leads to PDF ──
+  function cellExportText(cell) {
+    if (!cell) return '';
+    const fields = cell.querySelectorAll('textarea, input[type=text], input[type=date]');
+    if (fields.length) {
+      return Array.from(fields).map(f => f.value).filter(Boolean).join(' · ');
+    }
+    return cell.innerText.replace(/\s+/g, ' ').trim();
+  }
+
+  function exportCallLeadsPDF() {
+    if (!window.jspdf) { showToast('PDF library still loading…'); return; }
+    const { jsPDF } = window.jspdf;
+    const table = document.querySelector('.table-wrap table');
+    const headerCells = Array.from(table.querySelectorAll('thead th'));
+    const idx = {};
+    headerCells.forEach((th, i) => { idx[th.textContent.trim()] = i; });
+    const wanted = ['#', 'Number', 'Status', 'Duration', 'Date & Time', 'Device', 'SIM', 'Query', 'Follow Up'];
+    const cols = wanted.filter(w => idx[w] !== undefined);
+    const colIdx = cols.map(w => idx[w]);
+
+    const body = [];
+    table.querySelectorAll('tbody tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length <= 1) return;   // skip the empty-state row
+      body.push(colIdx.map(ci => cellExportText(cells[ci])));
+    });
+    if (!body.length) { showToast('No leads to export'); return; }
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const activeTab = document.querySelector('.tab.active');
+    const title = 'Call Leads' + (activeTab ? ' — ' + activeTab.textContent.trim() : '');
+    doc.setFontSize(14); doc.text(title, 40, 38);
+    doc.setFontSize(9); doc.setTextColor(120);
+    doc.text('Generated ' + new Date().toLocaleString() + '  ·  ' + body.length + ' lead(s)', 40, 53);
+    doc.autoTable({
+      head: [cols], body, startY: 64,
+      styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
+      headStyles: { fillColor: [17, 24, 39], textColor: 255 },
+      columnStyles: { 0: { cellWidth: 22 }, 7: { cellWidth: 150 }, 8: { cellWidth: 110 } },
+    });
+    doc.save('call_leads_' + new Date().toISOString().slice(0, 10) + '.pdf');
+  }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
