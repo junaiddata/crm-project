@@ -109,6 +109,10 @@ CSRF_COOKIE_HTTPONLY = False
 _csrf_origins = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000')
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins.split(',')]
 
+# URL of the sister-company Alabama CRM (separate Django app). Override per
+# environment, e.g. ALABAMA_URL=https://alabama.junaidworld.com/
+ALABAMA_URL = os.environ.get('ALABAMA_URL', 'http://localhost:8001/')
+
 CRM_WEBHOOK_SECRET   = os.environ.get('CRM_WEBHOOK_SECRET', 'a3f8c2e1b4d7a9f0c3e2b1d4a7f8c9e0b3d2a1f4')
 WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN')  # shared system-user token (same WABA/App)
 

@@ -16,7 +16,7 @@ APK_PATH = settings.BASE_DIR / 'downloads' / 'CallTracker.apk'
 
 
 def landing(request):
-    return render(request, 'landing.html')
+    return render(request, 'landing.html', {'alabama_url': settings.ALABAMA_URL})
 
 
 @login_required
