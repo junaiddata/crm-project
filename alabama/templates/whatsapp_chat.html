@@ -313,7 +313,7 @@
     <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
     Back
   </a>
-  <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+  <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
        alt="Company Logo"
        style="height:34px; object-fit:contain; max-width:110px; display:block; flex-shrink:0;">
   <div class="header-avatar">{{ sender|slice:"-2:" }}</div>
@@ -776,9 +776,9 @@
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.appended)      showToast('Added ' + data.added + ' message' + (data.added > 1 ? 's' : '') + ' to lead', '#1d4ed8');
+        if (data.appended)      showToast('Added ' + data.added + ' message' + (data.added > 1 ? 's' : '') + ' to lead', '#111827');
         else if (data.duplicate) showToast('Already in Leads — nothing new', '#d97706');
-        else                     showToast('Lead created', '#1d4ed8');
+        else                     showToast('Lead created', '#111827');
         toggleSelectMode();
       } else {
         const err = await res.json().catch(() => ({}));

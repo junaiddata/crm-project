@@ -30,28 +30,28 @@
       text-decoration: none; color: #0f172a;
     }
     .nav-brand-icon {
-      width: 36px; height: 36px; background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+      width: 36px; height: 36px; background: linear-gradient(135deg, #111827, #374151);
       border-radius: 9px; display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
     .nav-brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
-    .nav-brand-tag { font-size: 10px; font-weight: 600; color: #3b82f6; background: #eff6ff; padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
+    .nav-brand-tag { font-size: 10px; font-weight: 600; color: #374151; background: #f8fafc; padding: 1px 7px; border-radius: 20px; margin-left: 2px; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .nav-link { font-size: 14px; color: #475569; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; }
-    .nav-link:hover { color: #1d4ed8; background: #eff6ff; }
+    .nav-link:hover { color: #111827; background: #f8fafc; }
     .btn-nav-cta {
-      background: #1d4ed8; color: #fff;
+      background: #111827; color: #fff;
       padding: 9px 20px; border-radius: 8px;
       font-size: 14px; font-weight: 600;
       text-decoration: none;
       transition: background 0.15s, box-shadow 0.15s;
       display: inline-flex; align-items: center; gap: 7px;
     }
-    .btn-nav-cta:hover { background: #1e40af; box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+    .btn-nav-cta:hover { background: #000000; box-shadow: 0 4px 12px rgba(0,0,0,0.30); }
 
     /* ── Hero ── */
     .hero {
-      background: linear-gradient(160deg, #0c2340 0%, #1a3a5c 55%, #1e4d8c 100%);
+      background: linear-gradient(160deg, #0a0a0a 0%, #1f2937 55%, #3f3f46 100%);
       padding: 96px 40px 80px;
       text-align: center;
       position: relative;
@@ -60,18 +60,18 @@
     .hero::before {
       content: '';
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 60% 0%, rgba(59,130,246,0.18) 0%, transparent 65%),
-                  radial-gradient(ellipse at 10% 100%, rgba(29,78,216,0.15) 0%, transparent 55%);
+      background: radial-gradient(ellipse at 60% 0%, rgba(255,255,255,0.10) 0%, transparent 65%),
+                  radial-gradient(ellipse at 10% 100%, rgba(255,255,255,0.08) 0%, transparent 55%);
       pointer-events: none;
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35);
-      color: #93c5fd; font-size: 12.5px; font-weight: 600;
+      background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.25);
+      color: #cbd5e1; font-size: 12.5px; font-weight: 600;
       padding: 5px 14px; border-radius: 20px; margin-bottom: 28px;
       letter-spacing: 0.02em;
     }
-    .hero-badge-dot { width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; }
+    .hero-badge-dot { width: 6px; height: 6px; background: #374151; border-radius: 50%; }
     .hero h1 {
       font-size: clamp(36px, 5vw, 58px);
       font-weight: 800;
@@ -81,22 +81,22 @@
       max-width: 760px;
       margin: 0 auto 20px;
     }
-    .hero h1 span { color: #60a5fa; }
+    .hero h1 span { color: #9ca3af; }
     .hero p {
-      font-size: 18px; color: #94b8d8; max-width: 520px;
+      font-size: 18px; color: #9ca3af; max-width: 520px;
       margin: 0 auto 40px; line-height: 1.65;
     }
     .hero-cta-row { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
     .btn-hero-primary {
-      background: #3b82f6; color: #fff;
+      background: #374151; color: #fff;
       padding: 14px 28px; border-radius: 10px;
       font-size: 15px; font-weight: 700;
       text-decoration: none;
       display: inline-flex; align-items: center; gap: 8px;
       transition: all 0.15s;
-      box-shadow: 0 4px 24px rgba(59,130,246,0.4);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.35);
     }
-    .btn-hero-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(59,130,246,0.5); }
+    .btn-hero-primary:hover { background: #1f2937; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(0,0,0,0.45); }
     .btn-hero-secondary {
       color: #cbd5e1; border: 1px solid rgba(255,255,255,0.18);
       padding: 14px 24px; border-radius: 10px;
@@ -122,14 +122,14 @@
       border-right: 1px solid #e2e8f0;
     }
     .stat-item:last-child { border-right: none; }
-    .stat-number { font-size: 32px; font-weight: 800; color: #1d4ed8; letter-spacing: -0.03em; }
+    .stat-number { font-size: 32px; font-weight: 800; color: #111827; letter-spacing: -0.03em; }
     .stat-label { font-size: 13px; color: #64748b; font-weight: 500; margin-top: 2px; }
 
     /* ── Section ── */
     section { padding: 80px 40px; }
     .section-inner { max-width: 1100px; margin: 0 auto; }
     .section-tag {
-      font-size: 12px; font-weight: 700; color: #3b82f6;
+      font-size: 12px; font-weight: 700; color: #374151;
       text-transform: uppercase; letter-spacing: 0.08em;
       margin-bottom: 10px;
     }
@@ -156,8 +156,8 @@
       transition: all 0.2s;
     }
     .feature-card:hover {
-      border-color: #bfdbfe;
-      box-shadow: 0 8px 30px rgba(29,78,216,0.08);
+      border-color: #d4d4d8;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
       transform: translateY(-2px);
       background: #fff;
     }
@@ -178,36 +178,36 @@
     .steps-grid::before {
       content: ''; position: absolute;
       top: 22px; left: 12.5%; right: 12.5%;
-      height: 2px; background: linear-gradient(90deg, #bfdbfe, #3b82f6, #bfdbfe);
+      height: 2px; background: linear-gradient(90deg, #d4d4d8, #374151, #d4d4d8);
       z-index: 0;
     }
     .step { text-align: center; padding: 0 20px; position: relative; z-index: 1; }
     .step-num {
       width: 44px; height: 44px; border-radius: 50%;
-      background: #1d4ed8; color: #fff;
+      background: #111827; color: #fff;
       font-size: 16px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
       margin: 0 auto 16px; border: 3px solid #fff;
-      box-shadow: 0 0 0 2px #bfdbfe;
+      box-shadow: 0 0 0 2px #d4d4d8;
     }
     .step h4 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
     .step p { font-size: 13px; color: #64748b; line-height: 1.55; }
 
     /* ── CTA banner ── */
     .cta-section {
-      background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%);
+      background: linear-gradient(135deg, #0a0a0a 0%, #1f2937 100%);
       padding: 80px 40px;
       text-align: center;
     }
     .cta-section h2 { font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -0.025em; margin-bottom: 14px; }
-    .cta-section p { font-size: 16px; color: #94b8d8; margin-bottom: 36px; }
+    .cta-section p { font-size: 16px; color: #9ca3af; margin-bottom: 36px; }
 
     /* ── Footer ── */
     footer {
       background: #0f172a; padding: 32px 40px;
       text-align: center; color: #475569; font-size: 13px;
     }
-    footer a { color: #3b82f6; text-decoration: none; }
+    footer a { color: #374151; text-decoration: none; }
 
     /* ── Arrow icon inline ── */
     .arrow { display: inline-block; transition: transform 0.15s; }
@@ -238,7 +238,7 @@
   <!-- Nav -->
   <nav>
     <a href="/" class="nav-brand">
-      <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+      <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
            alt="Company Logo"
            style="height:42px; object-fit:contain; max-width:150px; display:block;">
     </a>
@@ -317,7 +317,7 @@
       <div class="features-grid">
 
         <div class="feature-card">
-          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+          <div class="feature-icon" style="background:#f8fafc; color:#111827;">
             <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z" clip-rule="evenodd"/>
             </svg>
@@ -367,7 +367,7 @@
         </div>
 
         <div class="feature-card">
-          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+          <div class="feature-icon" style="background:#f8fafc; color:#111827;">
             <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
             </svg>
@@ -430,9 +430,9 @@
       <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:20px; max-width:1000px;">
 
         <a href="/crm/" style="text-decoration:none; display:flex; align-items:center; gap:16px; padding:22px; background:#f8fafc; border:2px solid #e2e8f0; border-radius:14px; transition:all 0.2s;"
-           onmouseover="this.style.borderColor='#1d4ed8';this.style.background='#eff6ff';"
+           onmouseover="this.style.borderColor='#111827';this.style.background='#f8fafc';"
            onmouseout="this.style.borderColor='#e2e8f0';this.style.background='#f8fafc';">
-          <div style="width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,#111827,#374151);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="24" height="24" viewBox="0 0 20 20" fill="white"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
           </div>
           <div>
@@ -453,15 +453,15 @@
           </div>
         </a>
 
-        <a href="/emails/" style="text-decoration:none; display:flex; align-items:center; gap:16px; padding:22px; background:#eff6ff; border:2px solid #bfdbfe; border-radius:14px; transition:all 0.2s;"
-           onmouseover="this.style.borderColor='#1d4ed8';this.style.background='#dbeafe';"
-           onmouseout="this.style.borderColor='#bfdbfe';this.style.background='#eff6ff';">
-          <div style="width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,#1e3a8a,#3b82f6);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <a href="/emails/" style="text-decoration:none; display:flex; align-items:center; gap:16px; padding:22px; background:#f8fafc; border:2px solid #d4d4d8; border-radius:14px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='#111827';this.style.background='#f4f4f5';"
+           onmouseout="this.style.borderColor='#d4d4d8';this.style.background='#f8fafc';">
+          <div style="width:50px;height:50px;border-radius:13px;background:linear-gradient(135deg,#0b0f19,#374151);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="24" height="24" viewBox="0 0 20 20" fill="white"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
           </div>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#1e3a8a;margin-bottom:3px;">Email Manager <span style="font-size:10px;font-weight:700;background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:10px;vertical-align:middle;margin-left:4px;">NEW</span></div>
-            <div style="font-size:12.5px;color:#2563eb;">Sales inbox · Reply · Add to Leads</div>
+            <div style="font-size:15px;font-weight:700;color:#0b0f19;margin-bottom:3px;">Email Manager <span style="font-size:10px;font-weight:700;background:#f4f4f5;color:#111827;padding:2px 8px;border-radius:10px;vertical-align:middle;margin-left:4px;">NEW</span></div>
+            <div style="font-size:12.5px;color:#1f2937;">Sales inbox · Reply · Add to Leads</div>
           </div>
         </a>
 

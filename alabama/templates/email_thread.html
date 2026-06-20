@@ -20,7 +20,7 @@
 
     /* ── Header ── */
     header {
-      background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 60%, #2563eb 100%);
+      background: linear-gradient(135deg, #0b0f19 0%, #111827 60%, #1f2937 100%);
       color: #fff;
       padding: 0 20px;
       height: 60px;
@@ -45,7 +45,7 @@
     }
     .header-info { min-width: 0; }
     .header-title { font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .header-sub   { font-size: 11.5px; color: #93c5fd; }
+    .header-sub   { font-size: 11.5px; color: #cbd5e1; }
     .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .header-btn {
       display: inline-flex; align-items: center; gap: 6px;
@@ -55,12 +55,12 @@
       transition: all 0.15s; cursor: pointer; font-family: inherit; white-space: nowrap;
     }
     .header-btn:hover { background: rgba(255,255,255,0.22); color: #fff; }
-    .header-btn.active { background: #fff; color: #1d4ed8; }
+    .header-btn.active { background: #fff; color: #111827; }
 
     /* ── Select-mode bar ── */
     .select-bar {
       display: none;
-      background: #1e40af; color: #fff;
+      background: #000000; color: #fff;
       padding: 9px 20px; font-size: 12.5px; font-weight: 600;
       align-items: center; justify-content: space-between; gap: 10px;
       flex-shrink: 0;
@@ -71,8 +71,8 @@
       padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 700;
       border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
     }
-    .sb-add { background: #fff; color: #1d4ed8; }
-    .sb-add:hover:not(:disabled) { background: #dbeafe; }
+    .sb-add { background: #fff; color: #111827; }
+    .sb-add:hover:not(:disabled) { background: #f4f4f5; }
     .sb-add:disabled { opacity: 0.6; cursor: not-allowed; }
     .sb-cancel { background: rgba(255,255,255,0.15); color: #fff; }
     .sb-cancel:hover { background: rgba(255,255,255,0.28); }
@@ -94,7 +94,7 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
       overflow: hidden;
     }
-    .msg-row.out .email-card { background: #dbeafe; }
+    .msg-row.out .email-card { background: #f4f4f5; }
     .email-head {
       padding: 9px 14px 0;
       display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
@@ -110,11 +110,11 @@
     .email-atts { padding: 0 14px 11px; display: flex; gap: 6px; flex-wrap: wrap; }
     .att-link {
       display: inline-flex; align-items: center; gap: 5px;
-      background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      background: #f8fafc; color: #111827; border: 1px solid #d4d4d8;
       border-radius: 6px; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
       text-decoration: none; transition: all 0.12s;
     }
-    .att-link:hover { background: #dbeafe; }
+    .att-link:hover { background: #f4f4f5; }
     .msg-row.out .att-link { background: #fff; }
 
     /* ── Compose ── */
@@ -126,7 +126,7 @@
       border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .compose-inner:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .compose-inner:focus-within { border-color: #374151; box-shadow: 0 0 0 3px rgba(17,24,39,0.10); }
     .compose input[type=text] {
       width: 100%; padding: 10px 14px; border: none; outline: none;
       border-bottom: 1px solid #e2e8f0; font-family: inherit;
@@ -145,10 +145,10 @@
     .btn-send {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      background: #2563eb; color: #fff; border: none; cursor: pointer;
+      background: #1f2937; color: #fff; border: none; cursor: pointer;
       font-family: inherit; transition: background 0.15s;
     }
-    .btn-send:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-send:hover:not(:disabled) { background: #111827; }
     .btn-send:disabled { opacity: 0.55; cursor: not-allowed; }
     .compose-err {
       font-size: 12px; color: #dc2626; background: #fef2f2;
@@ -344,9 +344,9 @@
       });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
-        if (data.appended)       showToast('Added ' + data.added + ' email' + (data.added > 1 ? 's' : '') + ' to lead', '#1d4ed8');
+        if (data.appended)       showToast('Added ' + data.added + ' email' + (data.added > 1 ? 's' : '') + ' to lead', '#111827');
         else if (data.duplicate) showToast('Already in Leads — nothing new', '#d97706');
-        else                     showToast('Lead created', '#1d4ed8');
+        else                     showToast('Lead created', '#111827');
         toggleSelectMode();
       } else {
         showToast('Failed to add lead', '#dc2626');

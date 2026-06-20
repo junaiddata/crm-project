@@ -190,7 +190,7 @@ function CrmApp() {
       <header className="crm-header">
         <div className="crm-header-left">
           <div className="crm-logo">
-            <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+            <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
                  alt="Company Logo"
                  style={{height:'38px', objectFit:'contain', maxWidth:'130px', display:'block'}} />
           </div>
@@ -217,7 +217,7 @@ function CrmApp() {
 
       {/* Dashboard */}
       <div className="crm-dashboard">
-        <StatCard label="Total Leads" value={stats.total} icon="users" color="#1d4ed8" />
+        <StatCard label="Total Leads" value={stats.total} icon="users" color="#111827" />
         <StatCard label="Approved" value={stats.approved} icon="check" color="#059669" subtitle={stats.rate + '% conversion'} />
         <StatCard label="Pending" value={stats.pending} icon="clock" color="#d97706" subtitle="No status yet" />
         <StatCard label="Quoted" value={stats.quoted} icon="chart" color="#7c3aed" subtitle="With quotation" />

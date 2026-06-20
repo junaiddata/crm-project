@@ -108,7 +108,7 @@ function CrmToast({ message, type, onClose }) {
     const t = setTimeout(onClose, 2800);
     return () => clearTimeout(t);
   }, []);
-  const bg = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#1d4ed8';
+  const bg = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#111827';
   return (
     <div className="crm-toast" style={{ background: bg }}>
       <span>{message}</span>

@@ -22,7 +22,7 @@
 
     /* ─── Header ─── */
     .crm-header {
-      background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%);
+      background: linear-gradient(135deg, #0a0a0a 0%, #1f2937 100%);
       color: #fff;
       padding: 0 28px;
       height: 60px;
@@ -36,7 +36,7 @@
     .crm-header-right { display: flex; align-items: center; gap: 10px; }
     .crm-logo { display: flex; }
     .crm-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
-    .crm-subtitle { font-size: 11.5px; color: #94b8d8; margin-top: -1px; }
+    .crm-subtitle { font-size: 11.5px; color: #9ca3af; margin-top: -1px; }
 
     /* ─── Buttons ─── */
     .crm-btn {
@@ -45,14 +45,14 @@
       border: none; cursor: pointer; font-family: inherit;
       transition: all 0.15s ease;
     }
-    .crm-btn-accent { background: #3b82f6; color: #fff; }
-    .crm-btn-accent:hover { background: #2563eb; }
+    .crm-btn-accent { background: #374151; color: #fff; }
+    .crm-btn-accent:hover { background: #1f2937; }
     .crm-btn-outline { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
     .crm-btn-outline:hover { background: rgba(255,255,255,0.2); }
     .crm-btn-ghost { background: transparent; color: #475569; border: 1px solid #e2e8f0; }
     .crm-btn-ghost:hover { background: #f1f5f9; }
-    .crm-btn-primary { background: #1d4ed8; color: #fff; }
-    .crm-btn-primary:hover { background: #1e40af; }
+    .crm-btn-primary { background: #111827; color: #fff; }
+    .crm-btn-primary:hover { background: #000000; }
     .crm-btn-danger { background: #dc2626; color: #fff; }
     .crm-btn-danger:hover { background: #b91c1c; }
     .crm-icon-btn {
@@ -104,7 +104,7 @@
       position: relative;
       color: #94a3b8;
     }
-    .crm-search-wrap:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .crm-search-wrap:focus-within { border-color: #374151; box-shadow: 0 0 0 3px rgba(17,24,39,0.10); }
     .crm-search {
       border: none; outline: none; font-size: 13px; width: 100%;
       background: transparent; font-family: inherit; color: #0f172a;
@@ -125,12 +125,12 @@
       background-position: right 6px center;
       background-size: 16px;
     }
-    .crm-filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .crm-filter-select:focus { border-color: #374151; box-shadow: 0 0 0 3px rgba(17,24,39,0.10); }
     .crm-clear-filters {
-      font-size: 12px; color: #3b82f6; background: none; border: none;
+      font-size: 12px; color: #374151; background: none; border: none;
       cursor: pointer; font-weight: 500; padding: 4px 8px; border-radius: 4px;
     }
-    .crm-clear-filters:hover { background: #eff6ff; }
+    .crm-clear-filters:hover { background: #f8fafc; }
     .crm-result-count { font-size: 12px; color: #94a3b8; white-space: nowrap; }
     .crm-view-toggle {
       display: flex; border: 1px solid #dde3ea; border-radius: 7px; overflow: hidden;
@@ -141,7 +141,7 @@
     }
     .crm-vt-btn:not(:last-child) { border-right: 1px solid #dde3ea; }
     .crm-vt-btn:hover { color: #475569; background: #f8fafc; }
-    .crm-vt-active { background: #1d4ed8 !important; color: #fff !important; }
+    .crm-vt-active { background: #111827 !important; color: #fff !important; }
 
     /* ─── Content area ─── */
     .crm-content { flex: 1; padding: 0 28px 20px; }
@@ -171,13 +171,13 @@
       white-space: nowrap;
       position: sticky; top: 0; z-index: 10;
     }
-    .crm-th:hover { color: #1d4ed8; }
+    .crm-th:hover { color: #111827; }
     .crm-th-inner { display: flex; align-items: center; gap: 4px; }
     .crm-th-num { width: 40px; min-width: 40px; text-align: center; cursor: default; }
     .crm-th-num:hover { color: #64748b; }
     .crm-th-actions { cursor: default; }
     .crm-th-actions:hover { color: #64748b; }
-    .crm-sort-icon { display: flex; color: #1d4ed8; }
+    .crm-sort-icon { display: flex; color: #111827; }
     .crm-sort-icon.muted { color: #cbd5e1; }
 
     .crm-row { transition: background 0.1s; }
@@ -199,7 +199,7 @@
     .crm-td-actions { text-align: center; cursor: default; padding: 4px; }
     .crm-td-editing {
       padding: 4px 6px;
-      background: #eff6ff;
+      background: #f8fafc;
       overflow: visible;
     }
     .crm-cell-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -214,7 +214,7 @@
       height: 22px; width: 22px; object-fit: cover;
       border-radius: 4px; border: 1px solid #cbd5e1; cursor: zoom-in;
     }
-    .crm-url-link { color: #2563eb; text-decoration: none; margin: 0 3px; white-space: nowrap; }
+    .crm-url-link { color: #1f2937; text-decoration: none; margin: 0 3px; white-space: nowrap; }
     .crm-url-link:hover { text-decoration: underline; }
     .crm-img-preview {
       position: fixed; z-index: 9999; pointer-events: none;
@@ -225,10 +225,10 @@
     .crm-img-preview img { display: block; max-width: 260px; max-height: 260px; border-radius: 5px; }
 
     .crm-cell-input {
-      width: 100%; padding: 5px 8px; border: 1.5px solid #3b82f6;
+      width: 100%; padding: 5px 8px; border: 1.5px solid #374151;
       border-radius: 5px; font-size: 12.5px; font-family: inherit;
       outline: none; background: #fff; color: #0f172a;
-      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      box-shadow: 0 0 0 3px rgba(17,24,39,0.10);
     }
     .crm-cell-input-sm { padding: 3px 6px; font-size: 11.5px; }
 
@@ -260,7 +260,7 @@
       padding: 7px 10px; cursor: pointer; font-size: 12.5px; color: #334155;
       border-bottom: 1px solid #f8fafc;
     }
-    .crm-dd-item:hover { background: #eff6ff; color: #1d4ed8; }
+    .crm-dd-item:hover { background: #f8fafc; color: #111827; }
     .crm-dd-item:last-child { border-bottom: none; }
 
     /* ─── Status badge ─── */
@@ -319,7 +319,7 @@
       background: #f1f5f9; color: #475569; font-weight: 500;
       display: inline-flex; align-items: center; gap: 3px;
     }
-    .crm-kc-chip-sales { background: #eff6ff; color: #1d4ed8; }
+    .crm-kc-chip-sales { background: #f8fafc; color: #111827; }
     .crm-kc-bottom {
       display: flex; align-items: center; justify-content: space-between;
       font-size: 11px; color: #94a3b8;
@@ -333,7 +333,7 @@
       border-radius: 5px; font-size: 11px; color: #475569;
       background: #f8fafc; font-family: inherit; cursor: pointer; outline: none;
     }
-    .crm-kc-status-select:focus { border-color: #3b82f6; }
+    .crm-kc-status-select:focus { border-color: #374151; }
     .crm-kanban-empty { text-align: center; padding: 24px 8px; color: #cbd5e1; font-size: 12px; }
 
     /* ─── Overlay / Dialogs ─── */
@@ -396,10 +396,10 @@
       background: #f8fafc;
     }
     .crm-reset-btn {
-      background: none; border: none; color: #3b82f6; cursor: pointer;
+      background: none; border: none; color: #374151; cursor: pointer;
       font-size: 11.5px; font-weight: 500; padding: 2px 6px; border-radius: 4px;
     }
-    .crm-reset-btn:hover { background: #eff6ff; }
+    .crm-reset-btn:hover { background: #f8fafc; }
 
     /* ─── File cell ─── */
     .crm-td-file { cursor: default !important; }
@@ -409,11 +409,11 @@
     }
     .crm-file-link {
       display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; color: #1d4ed8; text-decoration: none; font-weight: 500;
+      font-size: 12px; color: #111827; text-decoration: none; font-weight: 500;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 110px;
-      padding: 2px 6px; border-radius: 4px; background: #eff6ff; flex: 1; min-width: 0;
+      padding: 2px 6px; border-radius: 4px; background: #f8fafc; flex: 1; min-width: 0;
     }
-    .crm-file-link:hover { background: #dbeafe; text-decoration: underline; }
+    .crm-file-link:hover { background: #f4f4f5; text-decoration: underline; }
     .crm-file-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .crm-file-del {
       flex-shrink: 0; background: none; border: none; cursor: pointer;
@@ -427,7 +427,7 @@
       border: 1.5px dashed #cbd5e1; background: #f8fafc; color: #64748b;
       cursor: pointer; font-family: inherit; transition: all 0.15s;
     }
-    .crm-upload-btn:hover { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+    .crm-upload-btn:hover { border-color: #374151; color: #111827; background: #f8fafc; }
 
     /* ─── Loading ─── */
     .crm-loading {

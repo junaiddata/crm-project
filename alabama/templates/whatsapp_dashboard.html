@@ -209,7 +209,7 @@
       {% for n in numbers %}
       <a class="chip num-chip {% if active_number == n.id %}active{% endif %}"
          href="?number={{ n.id }}{% if search %}&q={{ search }}{% endif %}{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}">
-        <span class="num-dot" style="background:{% cycle '#10b981' '#3b82f6' '#f59e0b' '#8b5cf6' '#ec4899' as numdot %};"></span>
+        <span class="num-dot" style="background:{% cycle '#10b981' '#374151' '#f59e0b' '#8b5cf6' '#ec4899' as numdot %};"></span>
         {{ n.label }} <span class="c-count">{{ n.count }}</span>
       </a>
       {% endfor %}

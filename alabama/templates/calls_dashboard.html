@@ -20,7 +20,7 @@
 
     /* ── Header ── */
     header {
-      background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%);
+      background: linear-gradient(135deg, #0a0a0a 0%, #1f2937 100%);
       color: #fff;
       padding: 0 28px;
       height: 64px;
@@ -31,7 +31,7 @@
     .header-left { display: flex; align-items: center; gap: 14px; }
     .header-logo { height: 38px; object-fit: contain; max-width: 130px; display: block; filter: brightness(0) invert(1); }
     .header-title { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
-    .header-sub   { font-size: 11.5px; color: #94b8d8; margin-top: 1px; }
+    .header-sub   { font-size: 11.5px; color: #9ca3af; margin-top: 1px; }
     .header-right { display: flex; align-items: center; gap: 8px; }
     .header-link {
       color: rgba(255,255,255,0.8); text-decoration: none;
@@ -66,21 +66,21 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' fill='%2394a3b8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
       background-repeat: no-repeat; background-position: right 6px center; background-size: 16px;
     }
-    .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .filter-select:focus { border-color: #374151; box-shadow: 0 0 0 3px rgba(17,24,39,0.10); }
     .filter-date {
       height: 38px; padding: 0 10px; border: 1px solid #dde3ea;
       border-radius: 8px; font-size: 12.5px; color: #334155; background: #fff;
       font-family: inherit; outline: none;
     }
-    .filter-date:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .filter-date:focus { border-color: #374151; box-shadow: 0 0 0 3px rgba(17,24,39,0.10); }
     .filter-label { font-size: 12px; color: #64748b; white-space: nowrap; }
     .filter-btn {
       height: 38px; padding: 0 18px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
       border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
       display: inline-flex; align-items: center; gap: 6px;
     }
-    .btn-apply  { background: #1d4ed8; color: #fff; }
-    .btn-apply:hover { background: #1e40af; }
+    .btn-apply  { background: #111827; color: #fff; }
+    .btn-apply:hover { background: #000000; }
     .btn-clear  { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
     .btn-clear:hover { background: #f1f5f9; }
     .filter-count { margin-left: auto; font-size: 12px; color: #94a3b8; white-space: nowrap; }
@@ -120,7 +120,7 @@
     .badge-answered { background: #dcfce7; color: #166534; }
     .badge-missed   { background: #fee2e2; color: #991b1b; }
     .badge-rejected { background: #ffedd5; color: #9a3412; }
-    .badge-outgoing { background: #dbeafe; color: #1e40af; }
+    .badge-outgoing { background: #f4f4f5; color: #000000; }
     .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
 
     /* ── Empty ── */
@@ -130,14 +130,14 @@
       padding: 14px 28px; text-align: center; font-size: 11.5px;
       color: #94a3b8; border-top: 1px solid #e2e8f0; background: #f8fafc;
     }
-    footer a { color: #3b82f6; text-decoration: none; }
+    footer a { color: #374151; text-decoration: none; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-left">
-    <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+    <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
          alt="Logo" class="header-logo">
     <div>
       <div class="header-title">Incoming Calls</div>
@@ -158,7 +158,7 @@
 <!-- Stats -->
 <div class="stats-strip">
   <div class="stat-card">
-    <div class="stat-icon" style="background:#eff6ff;color:#1d4ed8;">
+    <div class="stat-icon" style="background:#f8fafc;color:#111827;">
       <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
     </div>
     <div>
@@ -251,7 +251,7 @@
             <td>
               {% if call.direction == 'outgoing' %}
                 <span class="badge badge-outgoing">
-                  <span class="badge-dot" style="background:#3b82f6;"></span>Outgoing
+                  <span class="badge-dot" style="background:#374151;"></span>Outgoing
                 </span>
               {% else %}
                 <span class="badge badge-answered" style="background:#f0f9ff;color:#0369a1;">

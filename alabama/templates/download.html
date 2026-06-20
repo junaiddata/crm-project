@@ -23,24 +23,24 @@
     .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
     .nav-right { display: flex; align-items: center; gap: 12px; }
     .nav-link { font-size: 14px; color: #475569; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; }
-    .nav-link:hover { color: #1d4ed8; background: #eff6ff; }
+    .nav-link:hover { color: #111827; background: #f8fafc; }
     .btn-nav-cta {
-      background: #1d4ed8; color: #fff; padding: 9px 20px; border-radius: 8px;
+      background: #111827; color: #fff; padding: 9px 20px; border-radius: 8px;
       font-size: 14px; font-weight: 600; text-decoration: none;
       transition: background 0.15s, box-shadow 0.15s;
       display: inline-flex; align-items: center; gap: 7px;
     }
-    .btn-nav-cta:hover { background: #1e40af; box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+    .btn-nav-cta:hover { background: #000000; box-shadow: 0 4px 12px rgba(0,0,0,0.30); }
 
     /* ── Hero ── */
     .hero {
-      background: linear-gradient(160deg, #0c2340 0%, #1a3a5c 55%, #1e4d8c 100%);
+      background: linear-gradient(160deg, #0a0a0a 0%, #1f2937 55%, #3f3f46 100%);
       padding: 70px 40px 90px; position: relative; overflow: hidden;
     }
     .hero::before {
       content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 75% 10%, rgba(59,130,246,0.22) 0%, transparent 60%),
-                  radial-gradient(ellipse at 5% 100%, rgba(29,78,216,0.18) 0%, transparent 55%);
+      background: radial-gradient(ellipse at 75% 10%, rgba(255,255,255,0.10) 0%, transparent 60%),
+                  radial-gradient(ellipse at 5% 100%, rgba(255,255,255,0.08) 0%, transparent 55%);
       pointer-events: none;
     }
     .hero-grid {
@@ -49,8 +49,8 @@
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 7px;
-      background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35);
-      color: #93c5fd; font-size: 12.5px; font-weight: 600;
+      background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.25);
+      color: #cbd5e1; font-size: 12.5px; font-weight: 600;
       padding: 5px 14px; border-radius: 20px; margin-bottom: 22px; letter-spacing: 0.02em;
     }
     .hero-badge svg { width: 14px; height: 14px; }
@@ -58,8 +58,8 @@
       font-size: clamp(32px, 4.5vw, 52px); font-weight: 800; color: #fff;
       letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 18px;
     }
-    .hero h1 span { color: #60a5fa; }
-    .hero-sub { font-size: 17px; color: #94b8d8; max-width: 460px; margin-bottom: 32px; line-height: 1.6; }
+    .hero h1 span { color: #9ca3af; }
+    .hero-sub { font-size: 17px; color: #9ca3af; max-width: 460px; margin-bottom: 32px; line-height: 1.6; }
 
     .download-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
     .btn-download {
@@ -82,7 +82,7 @@
 
     .hero-meta { display: flex; gap: 22px; flex-wrap: wrap; }
     .hero-meta-item { display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 13px; font-weight: 500; }
-    .hero-meta-item svg { width: 16px; height: 16px; color: #60a5fa; }
+    .hero-meta-item svg { width: 16px; height: 16px; color: #9ca3af; }
 
     /* ── Phone mockup ── */
     .phone-wrap { display: flex; justify-content: center; }
@@ -99,19 +99,19 @@
       width: 100%; height: 100%; background: #f1f5f9; border-radius: 32px; overflow: hidden;
       display: flex; flex-direction: column;
     }
-    .app-status { background: #0c2340; color: #fff; font-size: 11px; padding: 8px 18px 6px;
+    .app-status { background: #0a0a0a; color: #fff; font-size: 11px; padding: 8px 18px 6px;
       display: flex; justify-content: space-between; align-items: center; }
     .app-header {
-      background: linear-gradient(135deg, #0c2340, #1e4d8c); color: #fff; padding: 10px 16px 16px;
+      background: linear-gradient(135deg, #0a0a0a, #3f3f46); color: #fff; padding: 10px 16px 16px;
     }
     .app-header-top { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-    .app-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#3b82f6,#60a5fa);
+    .app-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg,#374151,#9ca3af);
       display: flex; align-items: center; justify-content: center; }
     .app-title { font-size: 15px; font-weight: 700; }
     .app-stats { display: flex; gap: 10px; }
     .app-stat { flex: 1; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 10px; }
     .app-stat-num { font-size: 18px; font-weight: 800; line-height: 1; }
-    .app-stat-lbl { font-size: 9.5px; color: #93c5fd; margin-top: 3px; }
+    .app-stat-lbl { font-size: 9.5px; color: #cbd5e1; margin-top: 3px; }
     .app-list { flex: 1; overflow: hidden; padding: 14px; background: #f8fafc; display: flex; flex-direction: column; gap: 12px; }
     .dash-label { font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; }
     .dash-card { background: #fff; border: 1px solid #e8edf3; border-radius: 14px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
@@ -140,13 +140,13 @@
     .app-sync svg { width: 14px; height: 14px; }
     .app-nav { background: #fff; border-top: 1px solid #e2e8f0; display: flex; padding: 8px 0 12px; }
     .app-nav-item { flex: 1; text-align: center; font-size: 9.5px; color: #94a3b8; }
-    .app-nav-item.active { color: #1d4ed8; font-weight: 700; }
+    .app-nav-item.active { color: #111827; font-weight: 700; }
     .app-nav-item svg { width: 18px; height: 18px; display: block; margin: 0 auto 2px; }
 
     /* ── Steps ── */
     section { padding: 76px 40px; }
     .section-inner { max-width: 1000px; margin: 0 auto; }
-    .section-tag { font-size: 12px; font-weight: 700; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .section-tag { font-size: 12px; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
     .section-title { font-size: clamp(24px, 3vw, 34px); font-weight: 800; letter-spacing: -0.025em; color: #0f172a; margin-bottom: 12px; }
     .section-sub { font-size: 15.5px; color: #64748b; max-width: 520px; }
 
@@ -154,7 +154,7 @@
     .steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; margin-top: 46px; }
     .step-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px 20px; position: relative; }
     .step-num {
-      width: 36px; height: 36px; border-radius: 10px; background: #1d4ed8; color: #fff;
+      width: 36px; height: 36px; border-radius: 10px; background: #111827; color: #fff;
       font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-bottom: 14px;
     }
     .step-card h4 { font-size: 14.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
@@ -163,19 +163,19 @@
     /* ── Features ── */
     .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 46px; }
     .feature-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 26px 24px; transition: all 0.2s; }
-    .feature-card:hover { border-color: #bfdbfe; box-shadow: 0 8px 30px rgba(29,78,216,0.08); transform: translateY(-2px); background: #fff; }
+    .feature-card:hover { border-color: #d4d4d8; box-shadow: 0 8px 30px rgba(0,0,0,0.08); transform: translateY(-2px); background: #fff; }
     .feature-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
     .feature-icon svg { width: 22px; height: 22px; }
     .feature-card h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 7px; }
     .feature-card p { font-size: 13.5px; color: #64748b; line-height: 1.6; }
 
     /* ── CTA ── */
-    .cta-section { background: linear-gradient(135deg, #0c2340 0%, #1a3a5c 100%); padding: 76px 40px; text-align: center; }
+    .cta-section { background: linear-gradient(135deg, #0a0a0a 0%, #1f2937 100%); padding: 76px 40px; text-align: center; }
     .cta-section h2 { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -0.025em; margin-bottom: 12px; }
-    .cta-section p { font-size: 15.5px; color: #94b8d8; margin-bottom: 32px; }
+    .cta-section p { font-size: 15.5px; color: #9ca3af; margin-bottom: 32px; }
 
     footer { background: #0f172a; padding: 30px 40px; text-align: center; color: #475569; font-size: 13px; }
-    footer a { color: #3b82f6; text-decoration: none; }
+    footer a { color: #374151; text-decoration: none; }
 
     .warn-note {
       max-width: 1000px; margin: 0 auto; background: #fffbeb; border: 1px solid #fde68a;
@@ -205,7 +205,7 @@
   <!-- Nav -->
   <nav>
     <a href="/" class="nav-brand">
-      <img src="https://junaidworld.com/wp-content/uploads/2023/09/footer-logo.png.webp"
+      <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
            alt="Company Logo" style="height:40px; object-fit:contain; max-width:150px; display:block;">
     </a>
     <div class="nav-right">
@@ -297,10 +297,10 @@
 
                 <div class="dash-item">
                   <div class="dash-row">
-                    <div class="dash-ico" style="background:#dbeafe;color:#2563eb;"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 3l5 5-5 5V10H3V6h6z"/></svg></div>
+                    <div class="dash-ico" style="background:#f4f4f5;color:#1f2937;"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 3l5 5-5 5V10H3V6h6z"/></svg></div>
                     <span class="dash-row-lbl">Outgoing</span><span class="dash-row-val">7</span>
                   </div>
-                  <div class="dash-bar"><span style="width:29%;background:#2563eb;"></span></div>
+                  <div class="dash-bar"><span style="width:29%;background:#1f2937;"></span></div>
                 </div>
 
                 <div class="dash-item">
@@ -377,7 +377,7 @@
       <h2 class="section-title">Built for your sales team</h2>
       <div class="features-grid">
         <div class="feature-card">
-          <div class="feature-icon" style="background:#eff6ff; color:#1d4ed8;">
+          <div class="feature-icon" style="background:#f8fafc; color:#111827;">
             <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
           </div>
           <h3>Automatic call logging</h3>
