@@ -1,6 +1,6 @@
 import os
 from rest_framework import serializers
-from .models import Lead
+from .models import Lead, AlabamaLead
 
 
 class LeadSerializer(serializers.ModelSerializer):
@@ -35,3 +35,10 @@ class LeadSerializer(serializers.ModelSerializer):
             if request else obj.quotation_file.url
         )
         return {'name': os.path.basename(obj.quotation_file.name), 'data': url}
+
+
+class AlabamaLeadSerializer(LeadSerializer):
+    """Same fields as LeadSerializer, bound to the Alabama lead table."""
+
+    class Meta(LeadSerializer.Meta):
+        model = AlabamaLead

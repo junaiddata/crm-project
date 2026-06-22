@@ -9,7 +9,11 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import EmailLog, EmailSettings
+from crm_project.alabama_db import tpl, pick
+from .models import (
+    EmailLog, EmailSettings, EmailAttachment,
+    AlabamaEmailLog, AlabamaEmailSettings, AlabamaEmailAttachment,
+)
 from .utils import fetch_emails, send_email, test_connection
 
 logger = logging.getLogger(__name__)
@@ -53,8 +57,10 @@ def _threads_by_counterpart(qs):
 
 @login_required
 def email_dashboard(request):
-    cfg = EmailSettings.load()
-    base = EmailLog.objects.filter(direction='in')
+    EmailLogM = pick(request, EmailLog, AlabamaEmailLog)
+    EmailSettingsM = pick(request, EmailSettings, AlabamaEmailSettings)
+    cfg = EmailSettingsM.load()
+    base = EmailLogM.objects.filter(direction='in')
 
     qs = base
     active_filter = request.GET.get('filter', 'all')
@@ -96,7 +102,7 @@ def email_dashboard(request):
 
     groups = _threads_by_counterpart(qs)
 
-    return render(request, 'email_dashboard.html', {
+    return render(request, tpl(request, 'email_dashboard.html'), {
         'groups': groups,
         'shown_count': len(groups),
         'active_filter': active_filter,
@@ -115,8 +121,9 @@ def email_dashboard(request):
 
 @login_required
 def email_thread(request, address):
+    EmailLogM = pick(request, EmailLog, AlabamaEmailLog)
     address = address.strip().lower()
-    msgs = list(EmailLog.objects.filter(counterpart=address).order_by('received_at'))
+    msgs = list(EmailLogM.objects.filter(counterpart=address).order_by('received_at'))
 
     timeline = []
     for m in msgs:
@@ -138,7 +145,7 @@ def email_thread(request, address):
     if latest_in and latest_in.subject:
         reply_subject = latest_in.subject if latest_in.subject.lower().startswith('re:') else f'Re: {latest_in.subject}'
 
-    return render(request, 'email_thread.html', {
+    return render(request, tpl(request, 'email_thread.html'), {
         'address': address,
         'counterpart_name': counterpart_name,
         'timeline': timeline,
@@ -153,6 +160,8 @@ def email_thread_send(request, address):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+    EmailLogM = pick(request, EmailLog, AlabamaEmailLog)
+    EmailSettingsM = pick(request, EmailSettings, AlabamaEmailSettings)
     address = address.strip().lower()
     try:
         body = json.loads(request.body)
@@ -168,7 +177,7 @@ def email_thread_send(request, address):
     # message; References carries every Message-ID in the conversation so
     # Outlook/Gmail group the reply under the original instead of starting a
     # new thread.
-    thread = list(EmailLog.objects.filter(counterpart=address)
+    thread = list(EmailLogM.objects.filter(counterpart=address)
                   .exclude(message_id='').order_by('received_at'))
     latest_in = next((m for m in reversed(thread) if m.direction == 'in'), None)
     in_reply_to = latest_in.message_id if latest_in else ''
@@ -185,9 +194,10 @@ def email_thread_send(request, address):
         else:
             subject = f'Re: {base}'
 
-    ok, error = send_email(address, subject, message, in_reply_to=in_reply_to, references=references)
+    ok, error = send_email(address, subject, message, in_reply_to=in_reply_to, references=references,
+                           settings_model=EmailSettingsM, log_model=EmailLogM)
     if ok:
-        EmailLog.objects.filter(counterpart=address, direction='in', replied=False).update(replied=True)
+        EmailLogM.objects.filter(counterpart=address, direction='in', replied=False).update(replied=True)
         return JsonResponse({'ok': True})
     return JsonResponse({'error': error or 'Failed to send'}, status=502)
 
@@ -199,7 +209,8 @@ def email_mark(request, pk):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-    msg = get_object_or_404(EmailLog, pk=pk)
+    EmailLogM = pick(request, EmailLog, AlabamaEmailLog)
+    msg = get_object_or_404(EmailLogM, pk=pk)
     try:
         body = json.loads(request.body)
     except (json.JSONDecodeError, ValueError):
@@ -207,7 +218,7 @@ def email_mark(request, pk):
 
     replied = not body.get('undo')
     also_ids = [int(i) for i in body.get('also_mark_ids', []) if str(i).isdigit()]
-    EmailLog.objects.filter(pk__in=[msg.pk] + also_ids).update(replied=replied)
+    EmailLogM.objects.filter(pk__in=[msg.pk] + also_ids).update(replied=replied)
     return JsonResponse({'ok': True})
 
 
@@ -217,7 +228,12 @@ def email_fetch_now(request):
     """Manual 'Check mail now' from the dashboard (cron does this automatically on the VPS)."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    count, info = fetch_emails()
+    if pick(request, False, True):
+        count, info = fetch_emails(settings_model=AlabamaEmailSettings,
+                                   log_model=AlabamaEmailLog,
+                                   attachment_model=AlabamaEmailAttachment)
+    else:
+        count, info = fetch_emails()
     return JsonResponse({'ok': True, 'new': count, 'info': info})
 
 
@@ -233,7 +249,8 @@ PROVIDER_PRESETS = [
 
 @login_required
 def email_settings_page(request):
-    cfg = EmailSettings.load()
+    EmailSettingsM = pick(request, EmailSettings, AlabamaEmailSettings)
+    cfg = EmailSettingsM.load()
     saved = False
     test_results = None
 
@@ -264,7 +281,7 @@ def email_settings_page(request):
             else:
                 test_results = {'imap': 'Fill in mailbox, password and hosts first', 'smtp': '—'}
 
-    return render(request, 'email_settings.html', {
+    return render(request, tpl(request, 'email_settings.html'), {
         'cfg': cfg,
         'saved': saved,
         'test_results': test_results,

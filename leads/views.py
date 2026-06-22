@@ -17,8 +17,14 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import BroadcastJob, Lead, WhatsAppLead, WhatsAppOutbound
-from .serializers import LeadSerializer
+from crm_project.alabama_db import (
+    tpl, pick, is_alabama, wa_phone_ids, wa_labels, wa_default_phone_id,
+)
+from .models import (
+    BroadcastJob, Lead, WhatsAppLead, WhatsAppOutbound,
+    AlabamaBroadcastJob, AlabamaLead, AlabamaWhatsAppLead, AlabamaWhatsAppOutbound,
+)
+from .serializers import LeadSerializer, AlabamaLeadSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +43,11 @@ def _verify_meta_signature(request):
     return hmac.compare_digest(expected, header_sig)
 
 
-def _process_whatsapp_payload(payload, allowed_phone_ids=None):
+def _process_whatsapp_payload(payload, allowed_phone_ids=None, lead_model=WhatsAppLead):
     """Store inbound messages. When allowed_phone_ids is given, only messages
-    received on those of OUR numbers are processed (others are ignored)."""
+    received on those of OUR numbers are processed (others are ignored).
+
+    `lead_model` lets the Alabama webhook store into its own inbound table."""
     for entry in payload.get('entry', []):
         for change in entry.get('changes', []):
             if change.get('field') != 'messages':
@@ -66,7 +74,7 @@ def _process_whatsapp_payload(payload, allowed_phone_ids=None):
 
                 if msg_type == 'text':
                     text_body = msg.get('text', {}).get('body', '')
-                    WhatsAppLead.objects.get_or_create(
+                    lead_model.objects.get_or_create(
                         message_id=message_id,
                         defaults={'sender': sender, 'sender_name': sender_name,
                                   'business_phone_id': business_phone_id,
@@ -79,7 +87,7 @@ def _process_whatsapp_payload(payload, allowed_phone_ids=None):
                     media_id    = media_data.get('id', '')
                     caption     = media_data.get('caption', '')
 
-                    lead, created = WhatsAppLead.objects.get_or_create(
+                    lead, created = lead_model.objects.get_or_create(
                         message_id=message_id,
                         defaults={'sender': sender, 'sender_name': sender_name,
                                   'business_phone_id': business_phone_id,
@@ -97,6 +105,8 @@ def _process_whatsapp_payload(payload, allowed_phone_ids=None):
 
 @csrf_exempt
 def whatsapp_webhook(request):
+    lead_model = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+
     # ── Meta webhook verification handshake (GET) ─────────────────────────────
     if request.method == 'GET':
         mode      = request.GET.get('hub.mode')
@@ -127,10 +137,11 @@ def whatsapp_webhook(request):
     try:
         if internal_ok:
             # Trusted forward (e.g. old-number loop-back) — process everything.
-            _process_whatsapp_payload(payload)
+            _process_whatsapp_payload(payload, lead_model=lead_model)
         else:
-            # Direct from Meta — only handle the numbers we own.
-            _process_whatsapp_payload(payload, allowed_phone_ids=settings.WHATSAPP_PHONE_NUMBER_IDS)
+            # Direct from Meta — only handle the numbers this site owns.
+            _process_whatsapp_payload(payload, allowed_phone_ids=wa_phone_ids(request),
+                                      lead_model=lead_model)
     except Exception:
         logger.exception('Error processing WhatsApp webhook payload')
 
@@ -143,7 +154,8 @@ def whatsapp_reply(request, pk):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
-    wa_lead = get_object_or_404(WhatsAppLead, pk=pk)
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    wa_lead = get_object_or_404(WhatsAppLeadM, pk=pk)
 
     try:
         body = json.loads(request.body)
@@ -159,7 +171,7 @@ def whatsapp_reply(request, pk):
         wa_lead.reply_text = ''
         wa_lead.save()
         if also_mark_ids:
-            WhatsAppLead.objects.filter(pk__in=also_mark_ids).update(replied=False, reply_text='')
+            WhatsAppLeadM.objects.filter(pk__in=also_mark_ids).update(replied=False, reply_text='')
         return JsonResponse({'ok': True})
 
     if not message:
@@ -173,7 +185,7 @@ def whatsapp_reply(request, pk):
         wa_lead.reply_text = message
         wa_lead.save()
         if also_mark_ids:
-            WhatsAppLead.objects.filter(pk__in=also_mark_ids).update(replied=True, reply_text=message)
+            WhatsAppLeadM.objects.filter(pk__in=also_mark_ids).update(replied=True, reply_text=message)
         return JsonResponse({'ok': True})
 
     return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
@@ -184,11 +196,15 @@ CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF']
 
 class LeadListCreateView(APIView):
     def get(self, request):
-        leads = Lead.objects.all()
-        serializer = LeadSerializer(leads, many=True, context={'request': request})
+        LeadM = pick(request, Lead, AlabamaLead)
+        LeadSer = pick(request, LeadSerializer, AlabamaLeadSerializer)
+        leads = LeadM.objects.all()
+        serializer = LeadSer(leads, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
+        LeadM = pick(request, Lead, AlabamaLead)
+        LeadSer = pick(request, LeadSerializer, AlabamaLeadSerializer)
         # When adding from WhatsApp: one lead per customer per DAY.
         #   • same number + same date  → append only the NEW selected messages
         #   • same number, different day → fall through and create a separate lead
@@ -196,7 +212,7 @@ class LeadListCreateView(APIView):
             mobile    = (request.data.get('mobileNo') or '').strip()
             lead_date = (request.data.get('date') or '').strip()
             if mobile:
-                lookup = Lead.objects.filter(mobile_no=mobile)
+                lookup = LeadM.objects.filter(mobile_no=mobile)
                 if lead_date:
                     lookup = lookup.filter(date=lead_date)
                 existing = lookup.first()
@@ -210,13 +226,13 @@ class LeadListCreateView(APIView):
                         addition = '\n'.join(to_add)
                         existing.items = (base + '\n' + addition) if base else addition
                         existing.save()
-                        serializer = LeadSerializer(existing, context={'request': request})
+                        serializer = LeadSer(existing, context={'request': request})
                         return Response(
                             {'appended': True, 'added': len(to_add), **serializer.data},
                             status=status.HTTP_200_OK,
                         )
 
-                    serializer = LeadSerializer(existing, context={'request': request})
+                    serializer = LeadSer(existing, context={'request': request})
                     return Response(
                         {'duplicate': True, 'added': 0, **serializer.data},
                         status=status.HTTP_200_OK,
@@ -228,7 +244,7 @@ class LeadListCreateView(APIView):
             email_addr = (request.data.get('emailId') or '').strip()
             lead_date  = (request.data.get('date') or '').strip()
             if email_addr:
-                lookup = Lead.objects.filter(email_id__iexact=email_addr)
+                lookup = LeadM.objects.filter(email_id__iexact=email_addr)
                 if lead_date:
                     lookup = lookup.filter(date=lead_date)
                 existing = lookup.first()
@@ -242,19 +258,19 @@ class LeadListCreateView(APIView):
                         addition = '\n'.join(to_add)
                         existing.items = (base + '\n' + addition) if base else addition
                         existing.save()
-                        serializer = LeadSerializer(existing, context={'request': request})
+                        serializer = LeadSer(existing, context={'request': request})
                         return Response(
                             {'appended': True, 'added': len(to_add), **serializer.data},
                             status=status.HTTP_200_OK,
                         )
 
-                    serializer = LeadSerializer(existing, context={'request': request})
+                    serializer = LeadSer(existing, context={'request': request})
                     return Response(
                         {'duplicate': True, 'added': 0, **serializer.data},
                         status=status.HTTP_200_OK,
                     )
 
-        serializer = LeadSerializer(data=request.data, context={'request': request})
+        serializer = LeadSer(data=request.data, context={'request': request})
         if serializer.is_valid():
             # Mark auto-added leads so their identifying fields stay locked.
             if request.data.get('dedupeBySender'):
@@ -269,30 +285,33 @@ class LeadListCreateView(APIView):
 
 
 class LeadDetailView(APIView):
-    def get_object(self, pk):
-        return get_object_or_404(Lead, pk=pk)
+    def get_object(self, request, pk):
+        LeadM = pick(request, Lead, AlabamaLead)
+        return get_object_or_404(LeadM, pk=pk)
 
     def get(self, request, pk):
-        lead = self.get_object(pk)
-        serializer = LeadSerializer(lead, context={'request': request})
+        LeadSer = pick(request, LeadSerializer, AlabamaLeadSerializer)
+        lead = self.get_object(request, pk)
+        serializer = LeadSer(lead, context={'request': request})
         return Response(serializer.data)
 
     def patch(self, request, pk):
-        lead = self.get_object(pk)
+        LeadSer = pick(request, LeadSerializer, AlabamaLeadSerializer)
+        lead = self.get_object(request, pk)
         data = request.data
         # Identifying fields are locked for auto-added leads.
         if lead.source == 'whatsapp':
             data = {k: v for k, v in data.items() if k not in ('date', 'mobileNo')}
         elif lead.source == 'email':
             data = {k: v for k, v in data.items() if k not in ('date', 'emailId')}
-        serializer = LeadSerializer(lead, data=data, partial=True, context={'request': request})
+        serializer = LeadSer(lead, data=data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        lead = self.get_object(pk)
+        lead = self.get_object(request, pk)
         if lead.quotation_file:
             lead.quotation_file.delete(save=False)
         lead.delete()
@@ -303,7 +322,8 @@ class LeadUploadView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, pk):
-        lead = get_object_or_404(Lead, pk=pk)
+        LeadM = pick(request, Lead, AlabamaLead)
+        lead = get_object_or_404(LeadM, pk=pk)
         file = request.FILES.get('file')
         if not file:
             return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
@@ -315,7 +335,8 @@ class LeadUploadView(APIView):
         return Response({'name': file.name, 'data': url})
 
     def delete(self, request, pk):
-        lead = get_object_or_404(Lead, pk=pk)
+        LeadM = pick(request, Lead, AlabamaLead)
+        lead = get_object_or_404(LeadM, pk=pk)
         if lead.quotation_file:
             lead.quotation_file.delete(save=False)
             lead.quotation_file = None
@@ -388,12 +409,11 @@ def _wa_preview(msg):
     return msg.text_body or ''
 
 
-def _wa_conversations(qs):
+def _wa_conversations(qs, labels):
     """One row per (customer ↔ our-number) pair — each number is its own chat.
 
     qs is ordered newest-first, so the first time we meet a (sender, number)
     pair is its latest message and rows come out by most-recent activity."""
-    labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
     convs, order = {}, []
     for msg in qs:  # newest first
         key = (msg.sender, msg.business_phone_id)
@@ -426,7 +446,8 @@ def _wa_conversations(qs):
 
 @login_required
 def whatsapp_dashboard(request):
-    base = WhatsAppLead.objects.all()
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    base = WhatsAppLeadM.objects.all()
 
     # ── Filter by which of OUR numbers received the messages ──
     active_number = request.GET.get('number', 'all')
@@ -455,19 +476,19 @@ def whatsapp_dashboard(request):
     unread = number_base.filter(read=False).count()
 
     # Per-number chips (independent of the reply filter)
-    labels = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
+    labels = wa_labels(request)
     numbers = [
         {'id': pid, 'label': labels.get(pid, pid),
          'count': base.filter(business_phone_id=pid).count()}
-        for pid in getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+        for pid in wa_phone_ids(request)
     ]
 
-    conversations = _wa_conversations(qs)
+    conversations = _wa_conversations(qs, labels)
     if unread_keys is not None:
         conversations = [c for c in conversations
                          if (c['sender'], c['business_phone_id']) in unread_keys]
 
-    return render(request, 'whatsapp_dashboard.html', {
+    return render(request, tpl(request, 'whatsapp_dashboard.html'), {
         'conversations': conversations,
         'shown_count': len(conversations),
         'active_filter': active_filter,
@@ -485,10 +506,11 @@ def whatsapp_dashboard(request):
 @login_required
 def mark_replied(request, pk):
     from django.http import HttpResponseRedirect
-    from django.views.decorators.http import require_POST as rp
+    home = '/alabama/whatsapp/' if is_alabama(request) else '/whatsapp/'
     if request.method != 'POST':
-        return HttpResponseRedirect('/whatsapp/')
-    wa = get_object_or_404(WhatsAppLead, pk=pk)
+        return HttpResponseRedirect(home)
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    wa = get_object_or_404(WhatsAppLeadM, pk=pk)
     action = request.POST.get('action', 'reply')
     if action == 'unreply':
         wa.replied = False
@@ -497,17 +519,21 @@ def mark_replied(request, pk):
         wa.replied = True
         wa.reply_text = request.POST.get('reply_text', '').strip()
     wa.save()
-    next_url = request.POST.get('next', '/whatsapp/')
+    next_url = request.POST.get('next', home)
     return HttpResponseRedirect(next_url)
 
 
 # ── Broadcast page (send an approved template to a CSV of numbers) ─────────────
 
 def _broadcast_worker(job_id, recipients, *, template, language, phone_id, caption,
-                      image_bytes, image_mime, image_name):
+                      image_bytes, image_mime, image_name,
+                      job_model=BroadcastJob, outbound_model=WhatsAppOutbound):
     """Run the broadcast off the request thread, updating the BroadcastJob row as
     it goes. Sending 100+ template messages is one API call each (no bulk
-    endpoint), so it must not block the HTTP request or nginx returns a 504."""
+    endpoint), so it must not block the HTTP request or nginx returns a 504.
+
+    The model args are passed explicitly because this runs in a background
+    thread with no request, so the path-based resolver isn't available."""
     from django.db import connections
     from .broadcast import send_broadcast, stage_chat_image, upload_header_image
 
@@ -516,7 +542,7 @@ def _broadcast_worker(job_id, recipients, *, template, language, phone_id, capti
         if image_bytes:
             header_image_id = upload_header_image(image_bytes, image_mime, image_name, phone_id)
             if not header_image_id:
-                BroadcastJob.objects.filter(pk=job_id).update(
+                job_model.objects.filter(pk=job_id).update(
                     status='error',
                     message='Failed to upload the header image to WhatsApp — check API credentials.')
                 return
@@ -526,47 +552,52 @@ def _broadcast_worker(job_id, recipients, *, template, language, phone_id, capti
 
         def progress(i, number, ok):
             counts['sent' if ok else 'failed'] += 1
-            BroadcastJob.objects.filter(pk=job_id).update(
+            job_model.objects.filter(pk=job_id).update(
                 sent=counts['sent'], failed=counts['failed'])
 
         result = send_broadcast(
             recipients, template=template, language=language, phone_id=phone_id,
             caption=caption or None, header_image_id=header_image_id,
             chat_media_name=chat_media_name, on_progress=progress,
+            outbound_model=outbound_model,
         )
-        BroadcastJob.objects.filter(pk=job_id).update(
+        job_model.objects.filter(pk=job_id).update(
             status='done', sent=result['sent'], failed=result['failed'],
             errors='\n'.join(result['errors']),
             message=f"{result['sent']} of {len(recipients)} delivered to the API"
                     + (f" · {result['failed']} failed" if result['failed'] else ''))
     except Exception as exc:  # noqa: BLE001 — record any failure on the job
         logger.exception('Broadcast job %s failed', job_id)
-        BroadcastJob.objects.filter(pk=job_id).update(status='error', message=str(exc)[:255])
+        job_model.objects.filter(pk=job_id).update(status='error', message=str(exc)[:255])
     finally:
         connections.close_all()  # threads get their own DB connection — release it
 
 
 @login_required
 def whatsapp_broadcast(request):
-    from .broadcast import DEFAULT_PHONE_ID, parse_numbers
+    from .broadcast import parse_numbers
 
-    labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
-    id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    BroadcastJobM = pick(request, BroadcastJob, AlabamaBroadcastJob)
+    WhatsAppOutboundM = pick(request, WhatsAppOutbound, AlabamaWhatsAppOutbound)
+
+    labels   = wa_labels(request)
+    id_order = wa_phone_ids(request)
+    default_phone_id = wa_default_phone_id(request)
     numbers_choices = [{'id': pid, 'label': labels.get(pid, pid)} for pid in id_order]
 
     ctx = {
         'numbers_choices': numbers_choices,
-        'default_phone_id': DEFAULT_PHONE_ID,
+        'default_phone_id': default_phone_id,
         'template': 'plumbing_marketing',
         'language': 'en',
     }
 
     if request.method != 'POST':
-        return render(request, 'whatsapp_broadcast.html', ctx)
+        return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
 
     template = request.POST.get('template', '').strip()
     language = request.POST.get('language', 'en').strip() or 'en'
-    phone_id = request.POST.get('phone_id', '').strip() or DEFAULT_PHONE_ID
+    phone_id = request.POST.get('phone_id', '').strip() or default_phone_id
     caption  = request.POST.get('caption', '').strip()
     csv_file = request.FILES.get('csv')
     image    = request.FILES.get('image')
@@ -577,21 +608,21 @@ def whatsapp_broadcast(request):
 
     if not template:
         ctx['error'] = 'Template name is required.'
-        return render(request, 'whatsapp_broadcast.html', ctx)
+        return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
     if not csv_file:
         ctx['error'] = 'Please upload a CSV file of recipient numbers.'
-        return render(request, 'whatsapp_broadcast.html', ctx)
+        return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
 
     try:
         raw = csv_file.read().decode('utf-8-sig')
     except (UnicodeDecodeError, ValueError):
         ctx['error'] = 'Could not read the CSV file — make sure it is a plain CSV/text file.'
-        return render(request, 'whatsapp_broadcast.html', ctx)
+        return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
 
     recipients = parse_numbers(raw)
     if not recipients:
         ctx['error'] = 'No valid phone numbers found in the first column of the CSV.'
-        return render(request, 'whatsapp_broadcast.html', ctx)
+        return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
 
     # Read the optional header image now (in the request); the actual Meta upload
     # happens in the worker so a slow upload doesn't block the response.
@@ -600,11 +631,11 @@ def whatsapp_broadcast(request):
         image_mime = image.content_type or 'application/octet-stream'
         if not image_mime.startswith('image/'):
             ctx['error'] = 'The header file must be an image (JPG or PNG).'
-            return render(request, 'whatsapp_broadcast.html', ctx)
+            return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
         image_bytes = image.read()
         image_name  = image.name
 
-    job = BroadcastJob.objects.create(
+    job = BroadcastJobM.objects.create(
         template=template, label=labels.get(phone_id, phone_id),
         phone_id=phone_id, total=len(recipients), status='running')
 
@@ -612,18 +643,20 @@ def whatsapp_broadcast(request):
         target=_broadcast_worker, args=(job.id, recipients),
         kwargs=dict(template=template, language=language, phone_id=phone_id,
                     caption=caption, image_bytes=image_bytes,
-                    image_mime=image_mime, image_name=image_name),
+                    image_mime=image_mime, image_name=image_name,
+                    job_model=BroadcastJobM, outbound_model=WhatsAppOutboundM),
         daemon=True,
     ).start()
 
     ctx['job'] = {'id': job.id, 'total': len(recipients), 'label': labels.get(phone_id, phone_id)}
-    return render(request, 'whatsapp_broadcast.html', ctx)
+    return render(request, tpl(request, 'whatsapp_broadcast.html'), ctx)
 
 
 @login_required
 def whatsapp_broadcast_status(request, job_id):
     """JSON progress for a running/finished broadcast, polled by the page."""
-    job = get_object_or_404(BroadcastJob, pk=job_id)
+    BroadcastJobM = pick(request, BroadcastJob, AlabamaBroadcastJob)
+    job = get_object_or_404(BroadcastJobM, pk=job_id)
     err_lines = [e for e in job.errors.split('\n') if e] if job.errors else []
     return JsonResponse({
         'status': job.status,
@@ -644,11 +677,14 @@ def whatsapp_broadcast_status(request, job_id):
 def whatsapp_chat(request, sender):
     from datetime import timedelta
 
-    all_incoming = WhatsAppLead.objects.filter(sender=sender)
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    WhatsAppOutboundM = pick(request, WhatsAppOutbound, AlabamaWhatsAppOutbound)
+
+    all_incoming = WhatsAppLeadM.objects.filter(sender=sender)
 
     # Each (customer ↔ our number) is its own conversation. Build a tab per number.
-    labels   = getattr(settings, 'WHATSAPP_NUMBER_LABELS', {})
-    id_order = getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', [])
+    labels   = wa_labels(request)
+    id_order = wa_phone_ids(request)
     distinct = list(all_incoming.exclude(business_phone_id='')
                                 .order_by()  # clear default ordering so DISTINCT works
                                 .values_list('business_phone_id', flat=True).distinct())
@@ -666,10 +702,10 @@ def whatsapp_chat(request, sender):
     # Scope the thread to the active number (fall back to everything for legacy data).
     if active_number:
         thread_in = all_incoming.filter(business_phone_id=active_number)
-        outbound = list(WhatsAppOutbound.objects.filter(recipient=sender, business_phone_id=active_number).order_by('sent_at'))
+        outbound = list(WhatsAppOutboundM.objects.filter(recipient=sender, business_phone_id=active_number).order_by('sent_at'))
     else:
         thread_in = all_incoming
-        outbound = list(WhatsAppOutbound.objects.filter(recipient=sender).order_by('sent_at'))
+        outbound = list(WhatsAppOutboundM.objects.filter(recipient=sender).order_by('sent_at'))
 
     # Opening the conversation = reading it (WhatsApp-style). Mark its inbound
     # messages seen so the unread badge clears and stays cleared after refresh.
@@ -705,7 +741,7 @@ def whatsapp_chat(request, sender):
 
     sender_name = next((m.sender_name for m in incoming if m.sender_name), '')
 
-    return render(request, 'whatsapp_chat.html', {
+    return render(request, tpl(request, 'whatsapp_chat.html'), {
         'sender': sender,
         'sender_name': sender_name,
         'timeline': timeline,
@@ -719,9 +755,9 @@ def whatsapp_chat(request, sender):
     })
 
 
-def _business_phone_id_for(sender):
+def _business_phone_id_for(sender, lead_model=WhatsAppLead):
     """The number this customer last contacted us on — so we reply from the same one."""
-    lead = (WhatsAppLead.objects
+    lead = (lead_model.objects
             .filter(sender=sender)
             .exclude(business_phone_id='')
             .order_by('-received_at')
@@ -735,6 +771,9 @@ def whatsapp_chat_send(request, sender):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    WhatsAppOutboundM = pick(request, WhatsAppOutbound, AlabamaWhatsAppOutbound)
+
     try:
         body = json.loads(request.body)
         message = body.get('message', '').strip()
@@ -744,16 +783,16 @@ def whatsapp_chat_send(request, sender):
     if not message:
         return JsonResponse({'error': 'Message is required'}, status=400)
 
-    business_phone_id = body.get('number') or _business_phone_id_for(sender)
+    business_phone_id = body.get('number') or _business_phone_id_for(sender, WhatsAppLeadM)
     from .utils import send_whatsapp_reply as send_reply
     success = send_reply(sender, message, phone_number_id=business_phone_id)
 
     if success:
-        WhatsAppOutbound.objects.create(recipient=sender, msg_type='text', text_body=message,
-                                        business_phone_id=business_phone_id)
+        WhatsAppOutboundM.objects.create(recipient=sender, msg_type='text', text_body=message,
+                                         business_phone_id=business_phone_id)
         # Mark the customer's messages on this number as replied (outbound record
         # holds the text — don't also write reply_text or it shows twice).
-        mark = WhatsAppLead.objects.filter(sender=sender, replied=False)
+        mark = WhatsAppLeadM.objects.filter(sender=sender, replied=False)
         if business_phone_id:
             mark = mark.filter(business_phone_id=business_phone_id)
         mark.update(replied=True)
@@ -768,6 +807,9 @@ def whatsapp_chat_send_media(request, sender):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
+    WhatsAppLeadM = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
+    WhatsAppOutboundM = pick(request, WhatsAppOutbound, AlabamaWhatsAppOutbound)
+
     file = request.FILES.get('file')
     if not file:
         return JsonResponse({'error': 'No file provided'}, status=400)
@@ -775,7 +817,7 @@ def whatsapp_chat_send_media(request, sender):
     caption    = request.POST.get('caption', '').strip()
     mime_type  = file.content_type or 'application/octet-stream'
 
-    business_phone_id = request.POST.get('number') or _business_phone_id_for(sender)
+    business_phone_id = request.POST.get('number') or _business_phone_id_for(sender, WhatsAppLeadM)
     from .utils import upload_whatsapp_media, send_whatsapp_media, mime_to_whatsapp_type
     media_type = mime_to_whatsapp_type(mime_type)
 
@@ -790,13 +832,13 @@ def whatsapp_chat_send_media(request, sender):
 
     if success:
         from django.core.files.base import ContentFile
-        outbound = WhatsAppOutbound(
+        outbound = WhatsAppOutboundM(
             recipient=sender, msg_type=media_type,
             text_body=caption, media_name=file.name,
             business_phone_id=business_phone_id,
         )
         outbound.media_file.save(file.name, ContentFile(file_bytes), save=True)
-        mark = WhatsAppLead.objects.filter(sender=sender, replied=False)
+        mark = WhatsAppLeadM.objects.filter(sender=sender, replied=False)
         if business_phone_id:
             mark = mark.filter(business_phone_id=business_phone_id)
         mark.update(replied=True)

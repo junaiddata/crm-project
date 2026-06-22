@@ -11,8 +11,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import CallLog, CallLead
-from .serializers import CallLogCreateSerializer, CallLogSerializer
+from crm_project.alabama_db import tpl, pick
+from .models import CallLog, CallLead, AlabamaCallLog, AlabamaCallLead
+from .serializers import (
+    CallLogCreateSerializer, CallLogSerializer,
+    AlabamaCallLogCreateSerializer, AlabamaCallLogSerializer,
+)
 
 
 # ── REST API ─────────────────────────────────────────────────────────────────
@@ -23,13 +27,15 @@ class LogCallView(APIView):
     permission_classes     = []
 
     def post(self, request):
-        serializer = CallLogCreateSerializer(data=request.data)
+        CreateSer = pick(request, CallLogCreateSerializer, AlabamaCallLogCreateSerializer)
+        CallLeadM = pick(request, CallLead, AlabamaCallLead)
+        serializer = CreateSer(data=request.data)
         if serializer.is_valid():
             log = serializer.save()
 
             if log.direction == 'incoming':
                 # Auto-create a CallLead for every incoming call
-                CallLead.objects.get_or_create(
+                CallLeadM.objects.get_or_create(
                     call_log=log,
                     defaults=dict(
                         caller_number=log.caller_number,
@@ -44,7 +50,7 @@ class LogCallView(APIView):
             elif log.direction == 'outgoing' and log.status == 'answered':
                 # Check if we called back a missed lead within the last 24 hours
                 cutoff = log.timestamp - timezone.timedelta(hours=24)
-                missed_leads = CallLead.objects.filter(
+                missed_leads = CallLeadM.objects.filter(
                     caller_number=log.caller_number,
                     call_status='missed',
                     return_called=False,
@@ -71,7 +77,9 @@ class CallLogListView(APIView):
     """GET /api/calls/ — list with optional filters."""
 
     def get(self, request):
-        qs = CallLog.objects.all()
+        CallLogM = pick(request, CallLog, AlabamaCallLog)
+        ListSer = pick(request, CallLogSerializer, AlabamaCallLogSerializer)
+        qs = CallLogM.objects.all()
 
         status_f  = request.GET.get('status', '').strip()
         device_f  = request.GET.get('received_by', '').strip()
@@ -85,21 +93,22 @@ class CallLogListView(APIView):
         if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
         if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
-        return Response(CallLogSerializer(qs, many=True).data)
+        return Response(ListSer(qs, many=True).data)
 
 
 # ── Calls dashboard ───────────────────────────────────────────────────────────
 
 @login_required
 def calls_dashboard(request):
+    CallLogM = pick(request, CallLog, AlabamaCallLog)
     today = timezone.now().date()
 
-    today_qs       = CallLog.objects.filter(timestamp__date=today)
+    today_qs       = CallLogM.objects.filter(timestamp__date=today)
     today_total    = today_qs.count()
     today_answered = today_qs.filter(status='answered').count()
     today_missed   = today_qs.filter(status='missed').count()
 
-    qs = CallLog.objects.all()
+    qs = CallLogM.objects.all()
 
     status_f  = request.GET.get('status', '').strip()
     device_f  = request.GET.get('device', '').strip()
@@ -113,11 +122,11 @@ def calls_dashboard(request):
     if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
     if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
-    all_devices = CallLog.objects.values_list('received_by', flat=True).distinct().order_by('received_by')
-    all_sims    = (CallLog.objects.exclude(sim='')
+    all_devices = CallLogM.objects.values_list('received_by', flat=True).distinct().order_by('received_by')
+    all_sims    = (CallLogM.objects.exclude(sim='')
                    .values_list('sim', flat=True).distinct().order_by('sim'))
 
-    return render(request, 'calls_dashboard.html', {
+    return render(request, tpl(request, 'calls_dashboard.html'), {
         'calls':          qs,
         'shown_count':    qs.count(),
         'today_total':    today_total,
@@ -137,13 +146,14 @@ def calls_dashboard(request):
 
 @login_required
 def call_leads_dashboard(request):
+    CallLeadM = pick(request, CallLead, AlabamaCallLead)
     tab       = request.GET.get('tab', 'active')
     from_date = request.GET.get('from_date', '').strip()
     to_date   = request.GET.get('to_date', '').strip()
     search    = request.GET.get('q', '').strip()
     sim_f     = request.GET.get('sim', '').strip()
 
-    qs = CallLead.objects.select_related('call_log').all()
+    qs = CallLeadM.objects.select_related('call_log').all()
 
     if tab == 'junk':
         qs = qs.filter(lead_status__in=['junk', 'irrelevant'])
@@ -160,17 +170,17 @@ def call_leads_dashboard(request):
     if sim_f:      qs = qs.filter(sim=sim_f)
 
     # Distinct SIM lines across all leads, for the "number" filter dropdown.
-    all_sims = (CallLead.objects.exclude(sim='')
+    all_sims = (CallLeadM.objects.exclude(sim='')
                 .values_list('sim', flat=True).distinct().order_by('sim'))
 
     today = timezone.now().date()
 
-    return render(request, 'call_leads.html', {
+    return render(request, tpl(request, 'call_leads.html'), {
         'leads':        qs,
-        'total_active': CallLead.objects.filter(lead_status='active').count(),
-        'total_missed': CallLead.objects.filter(lead_status='active', call_status='missed').count(),
-        'total_followup': CallLead.objects.filter(lead_status='active', follow_up__isnull=False, follow_up__lte=today).count(),
-        'total_junk':   CallLead.objects.filter(lead_status__in=['junk','irrelevant']).count(),
+        'total_active': CallLeadM.objects.filter(lead_status='active').count(),
+        'total_missed': CallLeadM.objects.filter(lead_status='active', call_status='missed').count(),
+        'total_followup': CallLeadM.objects.filter(lead_status='active', follow_up__isnull=False, follow_up__lte=today).count(),
+        'total_junk':   CallLeadM.objects.filter(lead_status__in=['junk','irrelevant']).count(),
         'tab':          tab,
         'from_date':    from_date,
         'to_date':      to_date,
@@ -185,7 +195,8 @@ def call_leads_dashboard(request):
 @login_required
 @csrf_exempt
 def update_call_lead(request, pk):
-    lead = get_object_or_404(CallLead, pk=pk)
+    CallLeadM = pick(request, CallLead, AlabamaCallLead)
+    lead = get_object_or_404(CallLeadM, pk=pk)
 
     # File upload (multipart)
     if request.method == 'POST' and request.FILES.get('quotation_file'):
@@ -227,7 +238,8 @@ def update_call_lead(request, pk):
 @csrf_exempt
 @require_POST
 def toggle_return_called(request, pk):
-    lead = get_object_or_404(CallLead, pk=pk)
+    CallLeadM = pick(request, CallLead, AlabamaCallLead)
+    lead = get_object_or_404(CallLeadM, pk=pk)
     lead.return_called = not lead.return_called
     lead.return_called_at = timezone.now() if lead.return_called else None
     lead.save()
@@ -238,7 +250,8 @@ def toggle_return_called(request, pk):
 @csrf_exempt
 @require_POST
 def set_lead_status(request, pk):
-    lead = get_object_or_404(CallLead, pk=pk)
+    CallLeadM = pick(request, CallLead, AlabamaCallLead)
+    lead = get_object_or_404(CallLeadM, pk=pk)
     data = json.loads(request.body)
     new_status = data.get('status', 'active')
     if new_status in ['active', 'junk', 'irrelevant']:

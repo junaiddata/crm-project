@@ -66,3 +66,61 @@ class CallLead(models.Model):
 
     def __str__(self):
         return f'Lead: {self.caller_number} [{self.call_status}]'
+
+
+# ── Alabama (sister company) ───────────────────────────────────────────────
+# Same fields as CallLog/CallLead, stored in separate alabama_* tables so
+# Alabama's call data stays isolated from Junaid's. Served at /alabama/calls/.
+
+class AlabamaCallLog(models.Model):
+    STATUS_CHOICES = CallLog.STATUS_CHOICES
+    DIRECTION_CHOICES = CallLog.DIRECTION_CHOICES
+
+    caller_number = models.CharField(max_length=50)
+    received_by   = models.CharField(max_length=100)
+    sim           = models.CharField(max_length=100, blank=True, default='')
+    direction     = models.CharField(max_length=10, choices=DIRECTION_CHOICES, default='incoming')
+    status        = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    duration      = models.IntegerField(default=0)
+    timestamp     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'alabama_calllog'
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f'{self.caller_number} → {self.received_by} [{self.status}]'
+
+
+class AlabamaCallLead(models.Model):
+    LEAD_STATUS = CallLead.LEAD_STATUS
+
+    call_log      = models.OneToOneField(AlabamaCallLog, on_delete=models.CASCADE, related_name='lead')
+    caller_number = models.CharField(max_length=50)
+    call_status   = models.CharField(max_length=20)
+    duration      = models.IntegerField(default=0)
+    call_time     = models.DateTimeField()
+    received_by   = models.CharField(max_length=100, blank=True)
+    sim           = models.CharField(max_length=100, blank=True, default='')
+
+    query              = models.TextField(blank=True)
+    quotation_file     = models.FileField(upload_to='quotations/', blank=True, null=True)
+    quotation_filename = models.CharField(max_length=255, blank=True)
+    follow_up          = models.DateField(null=True, blank=True)
+    follow_up_note     = models.TextField(blank=True)
+    notes              = models.TextField(blank=True)
+
+    return_called    = models.BooleanField(default=False)
+    return_called_at = models.DateTimeField(null=True, blank=True)
+
+    lead_status = models.CharField(max_length=20, choices=LEAD_STATUS, default='active')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'alabama_calllead'
+        ordering = ['-call_time']
+
+    def __str__(self):
+        return f'Lead: {self.caller_number} [{self.call_status}]'

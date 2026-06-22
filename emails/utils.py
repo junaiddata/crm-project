@@ -37,40 +37,45 @@ def _aware(dt):
 RETENTION_DAYS = 90
 
 
-def purge_old_emails(days=RETENTION_DAYS):
+def purge_old_emails(days=RETENTION_DAYS, *, log_model=EmailLog, attachment_model=EmailAttachment):
     """Delete EmailLog rows (and their attachment files) older than `days`.
 
     Keeps storage from growing without bound. Django cascades the attachment
     rows on delete but does NOT remove the FileField files from disk, so we
     delete those first. Returns the number of EmailLog rows removed.
+
+    The model args let the Alabama site purge its own alabama_* tables.
     """
     cutoff = timezone.now() - timedelta(days=days)
-    old = EmailLog.objects.filter(received_at__lt=cutoff)
-    for att in EmailAttachment.objects.filter(email__in=old):
+    old = log_model.objects.filter(received_at__lt=cutoff)
+    for att in attachment_model.objects.filter(email__in=old):
         att.file.delete(save=False)  # remove file from storage, not the row
     _, by_model = old.delete()
-    return by_model.get('emails.EmailLog', 0)
+    return by_model.get(log_model._meta.label, 0)
 
 
-def fetch_emails(limit=500):
+def fetch_emails(limit=500, *, settings_model=EmailSettings, log_model=EmailLog,
+                 attachment_model=EmailAttachment):
     """Pull new messages from the IMAP inbox into EmailLog.
 
     Returns (new_count, info). Re-scans a 1-day window before the newest stored
     message; the unique Message-ID makes the overlap harmless. Each run also
     purges mail older than RETENTION_DAYS to cap storage.
+
+    The model args let the Alabama site fetch into its own alabama_* tables.
     """
-    cfg = EmailSettings.load()
+    cfg = settings_model.load()
     if not cfg.enabled:
         return 0, 'Email integration is disabled — enable it in Email Settings'
     if not cfg.is_configured:
         return 0, 'Email integration is not configured — fill in Email Settings'
 
-    purged = purge_old_emails()
+    purged = purge_old_emails(log_model=log_model, attachment_model=attachment_model)
     purged_note = f', purged {purged} old' if purged else ''
 
     from imap_tools import AND, MailBox
 
-    latest = EmailLog.objects.filter(direction='in').order_by('-received_at').first()
+    latest = log_model.objects.filter(direction='in').order_by('-received_at').first()
     if latest:
         since = (latest.received_at - timedelta(days=1)).date()
     elif cfg.fetch_since:
@@ -99,7 +104,7 @@ def fetch_emails(limit=500):
                 message_id = (hdr.headers.get('message-id', ('',))[0] or '').strip()
                 if not message_id:
                     message_id = f'<no-id-{hdr.uid}-{hdr.date_str}@{cfg.imap_host}>'
-                if EmailLog.objects.filter(message_id=message_id).exists():
+                if log_model.objects.filter(message_id=message_id).exists():
                     continue  # already stored — don't re-download body/attachments
                 new_uids.append(hdr.uid)
 
@@ -122,7 +127,7 @@ def fetch_emails(limit=500):
                 if msg.from_values:
                     from_name = (msg.from_values.name or '').strip()
 
-                log, created = EmailLog.objects.get_or_create(
+                log, created = log_model.objects.get_or_create(
                     message_id=message_id,
                     defaults={
                         'direction': 'in',
@@ -142,7 +147,7 @@ def fetch_emails(limit=500):
                     payload = att.payload
                     if not payload or len(payload) > MAX_ATTACHMENT_BYTES:
                         continue
-                    record = EmailAttachment(
+                    record = attachment_model(
                         email=log,
                         filename=att.filename or 'attachment',
                         content_type=att.content_type or '',
@@ -170,15 +175,18 @@ def _smtp_connect(cfg, timeout=30):
     return server
 
 
-def send_email(to_addr, subject, body, in_reply_to='', references=''):
+def send_email(to_addr, subject, body, in_reply_to='', references='', *,
+               settings_model=EmailSettings, log_model=EmailLog):
     """Send via SMTP and log as an outbound EmailLog. Returns (ok, error).
 
     `in_reply_to` is the Message-ID of the message being answered; `references`
     is the space-separated chain of Message-IDs for the whole conversation
     (oldest→newest). Both headers are what mail clients use to thread the reply
     under the original instead of showing it as a new message.
+
+    The model args let the Alabama site send from its own mailbox/tables.
     """
-    cfg = EmailSettings.load()
+    cfg = settings_model.load()
     if not cfg.is_configured:
         return False, 'Email is not configured — open Email Settings first'
 
@@ -202,7 +210,7 @@ def send_email(to_addr, subject, body, in_reply_to='', references=''):
         logger.exception('SMTP send failed')
         return False, str(exc)
 
-    EmailLog.objects.create(
+    log_model.objects.create(
         direction='out',
         counterpart=to_addr.strip().lower(),
         subject=subject,

@@ -68,7 +68,7 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),
         'HOST': os.environ.get('DB_HOST', 'localhost'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-    }
+    },
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -140,3 +140,23 @@ WHATSAPP_NUMBER_LABELS = {
     '1131190376754791': '+971 54 533 8872',
     '623707730818076':  '+971 4 236 7723',
 }
+
+# ── Alabama WhatsApp numbers ───────────────────────────────────────────────────
+# Alabama (the sister company served at /alabama/) uses DIFFERENT WhatsApp
+# numbers, but the SAME Meta app — so WHATSAPP_ACCESS_TOKEN / WHATSAPP_APP_SECRET
+# / WHATSAPP_VERIFY_TOKEN / WHATSAPP_API_VERSION above are shared as-is.
+# Only the Phone Number IDs, their labels, and the broadcast default differ.
+# Fill these in (or set the env vars) once Alabama's numbers are provisioned.
+ALABAMA_WHATSAPP_PHONE_NUMBER_IDS = [
+    pid.strip() for pid in os.environ.get(
+        'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', '',
+    ).split(',') if pid.strip()
+]
+
+# Friendly labels for Alabama's Phone Number IDs (shown in its dashboard filters).
+#   'PHONE_NUMBER_ID': '+971 5x xxx xxxx',
+ALABAMA_WHATSAPP_NUMBER_LABELS = {
+}
+
+# The number Alabama's broadcast page defaults to (one of the IDs above).
+ALABAMA_WHATSAPP_DEFAULT_PHONE_ID = os.environ.get('ALABAMA_WHATSAPP_DEFAULT_PHONE_ID', '')

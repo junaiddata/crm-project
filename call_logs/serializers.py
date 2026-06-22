@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CallLog
+from .models import CallLog, AlabamaCallLog
 
 
 class CallLogCreateSerializer(serializers.ModelSerializer):
@@ -22,3 +22,13 @@ class CallLogSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CallLog
         fields = ['id', 'caller_number', 'received_by', 'sim', 'direction', 'status', 'duration', 'timestamp']
+
+
+class AlabamaCallLogCreateSerializer(CallLogCreateSerializer):
+    class Meta(CallLogCreateSerializer.Meta):
+        model = AlabamaCallLog
+
+
+class AlabamaCallLogSerializer(CallLogSerializer):
+    class Meta(CallLogSerializer.Meta):
+        model = AlabamaCallLog

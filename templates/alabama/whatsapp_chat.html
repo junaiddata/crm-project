@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with +{{ sender }} — Alabama</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #eef2f7;
+      color: #0f172a;
+      font-size: 13px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+      color: #fff;
+      padding: 0 18px;
+      height: 60px;
+      display: flex; align-items: center; gap: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      color: rgba(255,255,255,0.85); text-decoration: none;
+      font-size: 13px; font-weight: 500; padding: 6px 10px;
+      border-radius: 7px; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08); transition: all 0.15s; flex-shrink: 0;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .header-avatar {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px;
+    }
+    .header-info { flex: 1; min-width: 0; }
+    .header-num  { font-size: 15px; font-weight: 700; }
+    .header-sub  { font-size: 11.5px; color: #6ee7b7; margin-top: 1px; }
+
+    /* ── Chat background ── */
+    .chat-bg {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 0 8px;
+      background: #e5ddd5;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5b9b0' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    /* ── Day divider ── */
+    .day-divider { text-align: center; margin: 12px 0; }
+    .day-divider span {
+      background: rgba(225,200,170,0.9); color: #5a4a3a;
+      font-size: 11.5px; font-weight: 500;
+      padding: 3px 12px; border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* ── Message row ── */
+    .msg-row { display: flex; padding: 2px 16px; }
+    .msg-row.in  { justify-content: flex-start; }
+    .msg-row.out { justify-content: flex-end; }
+
+    .bubble {
+      max-width: 65%;
+      padding: 7px 10px 4px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      line-height: 1.5;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+      word-break: break-word;
+    }
+    .bubble-in  { background: #fff; border-top-left-radius: 2px; color: #1a1a1a; }
+    .bubble-out { background: #dcf8c6; border-top-right-radius: 2px; color: #1a1a1a; }
+
+    /* media inside bubble */
+    .bubble img {
+      display: block; max-width: 240px; max-height: 240px;
+      border-radius: 6px; margin-bottom: 4px; cursor: pointer;
+    }
+    .doc-bubble {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; background: rgba(0,0,0,0.06);
+      border-radius: 6px; margin-bottom: 4px;
+      text-decoration: none; color: inherit;
+    }
+    .doc-icon {
+      width: 36px; height: 36px; border-radius: 6px;
+      background: #e53e3e; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+    .doc-icon.img-icon  { background: #3182ce; }
+    .doc-icon.vid-icon  { background: #805ad5; }
+    .doc-icon.aud-icon  { background: #d69e2e; }
+    .doc-name { font-size: 12.5px; font-weight: 600; word-break: break-all; }
+    .doc-sub  { font-size: 11px; color: #666; margin-top: 1px; }
+    .media-expired {
+      font-size: 12.5px; color: #94a3b8; font-style: italic;
+      padding: 10px 12px; background: rgba(0,0,0,0.04);
+      border-radius: 6px; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .bubble-caption { font-size: 13px; margin-top: 4px; }
+    .bubble-meta {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 4px; margin-top: 3px;
+    }
+    .bubble-time { font-size: 10.5px; color: #999; }
+    .bubble-out .bubble-time { color: #7a9c6e; }
+    .tick { font-size: 13px; color: #7a9c6e; line-height: 1; }
+
+    /* ── File preview bar (shown when file selected) ── */
+    #preview-bar {
+      display: none;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      padding: 8px 16px;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    #preview-bar.show { display: flex; }
+    #preview-thumb {
+      width: 48px; height: 48px; object-fit: cover;
+      border-radius: 6px; display: none;
+    }
+    #preview-doc-icon {
+      width: 48px; height: 48px; border-radius: 6px;
+      background: #e53e3e; display: none;
+      align-items: center; justify-content: center;
+    }
+    #preview-info { flex: 1; min-width: 0; }
+    #preview-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #preview-size { font-size: 11.5px; color: #888; margin-top: 2px; }
+    #preview-remove {
+      background: none; border: none; cursor: pointer;
+      color: #94a3b8; font-size: 18px; line-height: 1; padding: 4px;
+    }
+    #preview-remove:hover { color: #ef4444; }
+
+    /* ── Input area ── */
+    .input-area {
+      background: #f0f0f0;
+      padding: 10px 12px;
+      display: flex; align-items: flex-end; gap: 8px;
+      flex-shrink: 0;
+      border-top: 1px solid #ddd;
+    }
+    .attach-btn {
+      width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+      background: #fff; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: background 0.15s;
+      color: #64748b;
+    }
+    .attach-btn:hover { background: #f1f5f9; color: #059669; }
+    .input-wrap {
+      flex: 1;
+      background: #fff; border-radius: 22px;
+      padding: 9px 16px; min-height: 42px; max-height: 120px;
+      display: flex; align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .input-wrap textarea {
+      flex: 1; border: none; outline: none; resize: none;
+      font-family: inherit; font-size: 14px; color: #1a1a1a;
+      background: transparent; max-height: 100px; line-height: 1.4;
+    }
+    .input-wrap textarea::placeholder { color: #aaa; }
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+      background: #059669; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(5,150,105,0.4);
+      transition: background 0.15s;
+    }
+    .send-btn:hover:not(:disabled) { background: #047857; }
+    .send-btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
+    }
+    #lightbox.show { display: flex; }
+    #lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 4px; }
+    #lightbox-close {
+      position: absolute; top: 16px; right: 20px;
+      color: #fff; font-size: 28px; cursor: pointer; line-height: 1;
+      background: none; border: none;
+    }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      padding: 8px 20px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      color: #fff; background: #333; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: none; white-space: nowrap; z-index: 1000;
+    }
+
+    .empty-chat {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%; gap: 12px; color: #8a7a6a;
+    }
+    .empty-chat p { font-size: 14px; }
+
+    /* ── Add-to-Leads selection mode ── */
+    .lead-btn {
+      display: flex; align-items: center; gap: 6px;
+      color: #fff; font-size: 13px; font-weight: 600; padding: 6px 12px;
+      border-radius: 7px; border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.14); cursor: pointer; font-family: inherit;
+      transition: all 0.15s; flex-shrink: 0; white-space: nowrap;
+    }
+    .lead-btn:hover { background: rgba(255,255,255,0.26); }
+    .lead-btn.active { background: #fff; color: #065f46; border-color: #fff; }
+
+    .sel-check {
+      display: none; width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid #b8c4b0; background: #fff; flex-shrink: 0;
+      align-self: center; margin-right: 8px;
+      align-items: center; justify-content: center;
+    }
+    body.select-mode .msg-row.in { cursor: pointer; }
+    body.select-mode .msg-row.in .sel-check { display: flex; }
+    .sel-check svg { display: none; }
+    .msg-row.in.selected .sel-check { background: #059669; border-color: #059669; }
+    .msg-row.in.selected .sel-check svg { display: block; }
+    body.select-mode .msg-row.in.selected .bubble { box-shadow: 0 0 0 2px #059669; }
+    body.select-mode .input-area { display: none; }
+    body.select-mode .msg-row.out { opacity: 0.55; }
+
+    .select-bar {
+      display: none; align-items: center; justify-content: space-between;
+      gap: 10px; background: #ecfdf5; border-top: 1px solid #a7f3d0;
+      padding: 11px 16px; flex-shrink: 0;
+    }
+    .select-bar.show { display: flex; }
+    .select-bar-info { font-size: 13px; font-weight: 700; color: #065f46; }
+    .select-bar-btns { display: flex; gap: 8px; }
+    .sb-btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .sb-add { background: #059669; color: #fff; }
+    .sb-add:hover:not(:disabled) { background: #047857; }
+    .sb-add:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sb-cancel { background: #fff; color: #64748b; border: 1px solid #cbd5e1; }
+    .sb-cancel:hover { background: #f1f5f9; }
+
+    /* ── Number switcher (when a customer wrote to >1 of our numbers) ── */
+    .num-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; background: #054b38; overflow-x: auto; flex-shrink: 0;
+    }
+    .num-bar-label { font-size: 11px; font-weight: 700; color: #6ee7b7; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 2px; }
+    .num-bar a {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;
+      text-decoration: none; color: rgba(255,255,255,0.82);
+      background: rgba(255,255,255,0.12); white-space: nowrap; transition: all 0.15s;
+    }
+    .num-bar a:hover { background: rgba(255,255,255,0.22); color: #fff; }
+    .num-bar a.active { background: #fff; color: #065f46; }
+
+    /* ── Embed mode (inside the WhatsApp-Web shell's right pane) ── */
+    body.embed { background: #eef2f7; }
+    body.embed > header, body.embed > .num-bar { display: none; }
+    .embed-header { display: none; }
+    body.embed .embed-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 16px; background: #f0f2f5;
+      border-bottom: 1px solid #d8dde3; flex-shrink: 0;
+    }
+    .eh-avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #065f46, #10b981); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px;
+    }
+    .eh-info { flex: 1; min-width: 0; }
+    .eh-name { font-size: 15px; font-weight: 600; color: #111b21; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .eh-sub  { font-size: 12px; color: #667781; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .eh-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .eh-icon {
+      width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+      background: transparent; color: #54656f; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .eh-icon:hover { background: #e3e7ea; }
+    .eh-lead {
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: #065f46;
+      background: #e7f7ef; border: 1px solid #a7f3d0; border-radius: 8px; padding: 7px 12px;
+      transition: all 0.15s;
+    }
+    .eh-lead:hover { background: #d1fae5; }
+    .eh-lead.active { background: #065f46; color: #fff; border-color: #065f46; }
+  </style>
+</head>
+<body class="{% if embed %}embed{% endif %}">
+
+<header>
+  <a href="/alabama/whatsapp/" class="back-btn">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/></svg>
+    Back
+  </a>
+  <img src="https://alabamauae.com/wp-content/uploads/2026/01/New-Alabama-Logo-Horizontal.webp"
+       alt="Company Logo"
+       style="height:34px; object-fit:contain; max-width:110px; display:block; flex-shrink:0;">
+  <div class="header-avatar">{{ sender|slice:"-2:" }}</div>
+  <div class="header-info">
+    {% if sender_name %}
+    <div class="header-num">{{ sender_name }}</div>
+    <div class="header-sub">+{{ sender }} · {{ message_count }} message{{ message_count|pluralize }}{% if active_label %} · via {{ active_label }}{% endif %}</div>
+    {% else %}
+    <div class="header-num">+{{ sender }}</div>
+    <div class="header-sub">{{ message_count }} message{{ message_count|pluralize }} received{% if active_label %} · via {{ active_label }}{% endif %}</div>
+    {% endif %}
+  </div>
+  <button class="lead-btn" id="leadModeBtn" onclick="toggleSelectMode()" style="margin-left:auto;">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+    Add to Leads
+  </button>
+  <a href="/alabama/" class="back-btn">
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+    Home
+  </a>
+</header>
+
+<!-- Compact WhatsApp-style header (shown only when embedded in the shell) -->
+<div class="embed-header">
+  <div class="eh-avatar">{{ sender|slice:"-2:" }}</div>
+  <div class="eh-info">
+    <div class="eh-name">{% if sender_name %}{{ sender_name }}{% else %}+{{ sender }}{% endif %}</div>
+    <div class="eh-sub">+{{ sender }}{% if active_label %} · via {{ active_label }}{% endif %} · {{ message_count }} message{{ message_count|pluralize }}</div>
+  </div>
+  <div class="eh-actions">
+    <button class="eh-lead" id="leadModeBtnEmbed" onclick="toggleSelectMode()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"/></svg>
+      Add to Leads
+    </button>
+  </div>
+</div>
+
+{% if numbers|length > 1 %}
+<!-- Number switcher: each number is a separate conversation -->
+<div class="num-bar">
+  <span class="num-bar-label">Chatting via</span>
+  {% for n in numbers %}
+  <a href="?number={{ n.id }}" class="{% if n.active %}active{% endif %}">
+    <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+    {{ n.label }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Chat messages -->
+<div class="chat-bg" id="chatBg">
+  {% if timeline %}
+    {% for item in timeline %}
+
+    {% if forloop.first %}
+    <div class="day-divider"><span>{{ item.time|date:"d F Y" }}</span></div>
+    {% endif %}
+
+    {% if item.dir == 'in' %}
+    <script>
+      window.MSG_DATA = window.MSG_DATA || {};
+      window.MSG_DATA[{{ item.id }}] = {
+        text: '{{ item.text|escapejs }}',
+        type: '{{ item.msg_type|escapejs }}',
+        media: '{% if item.media_url %}{{ request.scheme }}://{{ request.get_host }}{{ item.media_url|escapejs }}{% endif %}',
+        date: '{{ item.time|date:"Y-m-d" }}'
+      };
+    </script>
+    {% endif %}
+
+    <div class="msg-row {{ item.dir }}"{% if item.dir == 'in' %} data-id="{{ item.id }}" onclick="toggleMsg(event, this, {{ item.id }})"{% endif %}>
+      {% if item.dir == 'in' %}
+      <div class="sel-check">
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="#fff"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      </div>
+      {% endif %}
+      <div class="bubble bubble-{{ item.dir }}">
+
+        {% if item.msg_type == 'image' %}
+          {% if item.media_url %}
+            <img src="{{ item.media_url }}" alt="{{ item.media_name }}" onclick="openLightbox(this.src)">
+          {% else %}
+            <div class="media-expired">📷 Photo no longer available</div>
+          {% endif %}
+          {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
+
+        {% elif item.msg_type == 'video' %}
+          {% if item.media_url %}
+            <video controls style="display:block;max-width:260px;max-height:200px;border-radius:6px;margin-bottom:4px;">
+              <source src="{{ item.media_url }}">
+              <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
+                <div class="doc-icon vid-icon">
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12.553 1.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z"/></svg>
+                </div>
+                <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Video · tap to download</div></div>
+              </a>
+            </video>
+          {% else %}
+            <div class="media-expired">🎥 Video no longer available</div>
+          {% endif %}
+          {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
+
+        {% elif item.msg_type == 'audio' %}
+          {% if item.media_url %}
+            <audio controls style="display:block;width:220px;margin-bottom:4px;">
+              <source src="{{ item.media_url }}">
+            </audio>
+            <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}" style="margin-top:0;">
+              <div class="doc-icon aud-icon">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"/></svg>
+              </div>
+              <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Download audio</div></div>
+            </a>
+          {% else %}
+            <div class="media-expired">🎵 Voice message no longer available</div>
+          {% endif %}
+
+        {% elif item.msg_type == 'document' %}
+          {% if item.media_url %}
+            <a class="doc-bubble" href="{{ item.media_url }}" download="{{ item.media_name }}">
+              <div class="doc-icon">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+              </div>
+              <div><div class="doc-name">{{ item.media_name }}</div><div class="doc-sub">Document · tap to download</div></div>
+            </a>
+          {% else %}
+            <div class="media-expired">📄 {% if item.media_name %}{{ item.media_name }}{% else %}Document{% endif %} no longer available</div>
+          {% endif %}
+          {% if item.text %}<div class="bubble-caption">{{ item.text }}</div>{% endif %}
+
+        {% else %}
+          {{ item.text }}
+        {% endif %}
+
+        <div class="bubble-meta">
+          <span class="bubble-time">{{ item.time|date:"H:i" }}</span>
+          {% if item.dir == 'out' %}<span class="tick">✓✓</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% endfor %}
+  {% else %}
+    <div class="empty-chat">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="#c5b9b0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L.057 23.882a.5.5 0 00.61.61l6.037-1.466A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 01-5.078-1.384l-.364-.217-3.768.915.93-3.768-.236-.374A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      <p>No messages with +{{ sender }} yet</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- File preview bar -->
+<div id="preview-bar">
+  <img id="preview-thumb" alt="preview">
+  <div id="preview-doc-icon">
+    <svg width="22" height="22" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+  </div>
+  <div id="preview-info">
+    <div id="preview-name"></div>
+    <div id="preview-size"></div>
+  </div>
+  <button id="preview-remove" onclick="clearFile()" title="Remove">×</button>
+</div>
+
+<!-- Selection action bar (Add to Leads) -->
+<div class="select-bar" id="selectBar">
+  <div class="select-bar-info" id="selCount">Tap messages to select</div>
+  <div class="select-bar-btns">
+    <button class="sb-btn sb-cancel" onclick="toggleSelectMode()">Cancel</button>
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="addSelectedToLeads()" disabled>Add to Leads</button>
+  </div>
+</div>
+
+<!-- Input area -->
+<div class="input-area">
+  <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach file">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+    </svg>
+  </button>
+  <input type="file" id="fileInput" style="display:none"
+    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+    onchange="handleFileSelect(this)">
+
+  <div class="input-wrap">
+    <textarea id="msgInput" rows="1" placeholder="Type a message…"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+  </div>
+
+  <button class="send-btn" id="sendBtn" onclick="send()" title="Send">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">×</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const SENDER        = '{{ sender|escapejs }}';
+  const SENDER_NAME   = '{{ sender_name|escapejs }}';
+  const ACTIVE_NUMBER = '{{ active_number|escapejs }}';
+  const CSRF          = '{{ csrf_token }}';
+
+  const chatBg   = document.getElementById('chatBg');
+  const msgInput = document.getElementById('msgInput');
+  const sendBtn  = document.getElementById('sendBtn');
+  chatBg.scrollTop = chatBg.scrollHeight;
+
+  let selectedFile = null;
+
+  // ── File handling ──────────────────────────────────────────────────────────
+
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    selectedFile = file;
+
+    const bar   = document.getElementById('preview-bar');
+    const thumb = document.getElementById('preview-thumb');
+    const docIc = document.getElementById('preview-doc-icon');
+
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-size').textContent = formatBytes(file.size);
+
+    if (file.type.startsWith('image/')) {
+      thumb.src = URL.createObjectURL(file);
+      thumb.style.display = 'block';
+      docIc.style.display = 'none';
+    } else {
+      thumb.style.display = 'none';
+      docIc.style.display = 'flex';
+    }
+
+    bar.classList.add('show');
+    msgInput.placeholder = 'Add a caption… (optional)';
+    msgInput.focus();
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('preview-bar').classList.remove('show');
+    document.getElementById('preview-thumb').style.display = 'none';
+    document.getElementById('preview-doc-icon').style.display = 'none';
+    msgInput.placeholder = 'Type a message…';
+  }
+
+  function formatBytes(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(1) + ' MB';
+  }
+
+  // ── Send ───────────────────────────────────────────────────────────────────
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  }
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  async function send() {
+    if (selectedFile) {
+      await sendMedia();
+    } else {
+      await sendText();
+    }
+  }
+
+  async function sendText() {
+    const message = msgInput.value.trim();
+    if (!message) return;
+
+    setLoading(true);
+    try {
+      const res  = await fetch('/alabama/api/whatsapp/chat/' + SENDER + '/send/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ message, number: ACTIVE_NUMBER }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        appendTextBubble(message);
+        msgInput.value = '';
+        msgInput.style.height = 'auto';
+        notifyParentReplied();
+        showToast('Sent');
+      } else {
+        showToast(data.error || 'Failed to send', '#dc2626');
+      }
+    } catch { showToast('Network error', '#dc2626'); }
+    setLoading(false);
+  }
+
+  async function sendMedia() {
+    const caption = msgInput.value.trim();
+    setLoading(true);
+
+    const form = new FormData();
+    form.append('file', selectedFile);
+    if (caption) form.append('caption', caption);
+    form.append('number', ACTIVE_NUMBER);
+
+    try {
+      const res  = await fetch('/alabama/api/whatsapp/chat/' + SENDER + '/send-media/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+        body: form,
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        appendMediaBubble(data.media_type, data.media_url, data.media_name, data.caption || '');
+        msgInput.value = '';
+        msgInput.style.height = 'auto';
+        clearFile();
+        notifyParentReplied();
+        showToast('Sent');
+      } else {
+        showToast(data.error || 'Failed to send', '#dc2626');
+      }
+    } catch { showToast('Network error', '#dc2626'); }
+    setLoading(false);
+  }
+
+  // ── Append bubbles ─────────────────────────────────────────────────────────
+
+  function nowHHMM() {
+    const d = new Date();
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  }
+
+  function meta(dir) {
+    const tick = dir === 'out' ? '<span class="tick">✓✓</span>' : '';
+    return `<div class="bubble-meta"><span class="bubble-time">${nowHHMM()}</span>${tick}</div>`;
+  }
+
+  function wrapBubble(dir, inner) {
+    // Remove empty-chat placeholder
+    const empty = chatBg.querySelector('.empty-chat');
+    if (empty) empty.remove();
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + dir;
+    row.innerHTML = `<div class="bubble bubble-${dir}">${inner}</div>`;
+    chatBg.appendChild(row);
+    chatBg.scrollTop = chatBg.scrollHeight;
+  }
+
+  function appendTextBubble(text) {
+    const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    wrapBubble('out', safe + meta('out'));
+  }
+
+  function appendMediaBubble(mediaType, mediaUrl, mediaName, caption) {
+    let inner = '';
+    const safeName = mediaName.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safeCap  = caption ? caption.replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+
+    if (mediaType === 'image') {
+      inner = `<img src="${mediaUrl}" alt="${safeName}" onclick="openLightbox(this.src)">`;
+      if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
+    } else if (mediaType === 'video') {
+      inner = `<video controls style="display:block;max-width:260px;max-height:200px;border-radius:6px;margin-bottom:4px;"><source src="${mediaUrl}"></video>`;
+      if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
+    } else if (mediaType === 'audio') {
+      inner = `<audio controls style="display:block;width:220px;margin-bottom:4px;"><source src="${mediaUrl}"></audio>`;
+      if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
+    } else {
+      inner = `<a class="doc-bubble" href="${mediaUrl}" download="${safeName}">
+        <div class="doc-icon"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg></div>
+        <div><div class="doc-name">${safeName}</div><div class="doc-sub">Document · tap to download</div></div>
+      </a>`;
+      if (safeCap) inner += `<div class="bubble-caption">${safeCap}</div>`;
+    }
+    inner += meta('out');
+    wrapBubble('out', inner);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function setLoading(on) {
+    sendBtn.disabled   = on;
+    msgInput.disabled  = on;
+    sendBtn.innerHTML  = on
+      ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="white" style="animation:spin 0.8s linear infinite"><path d="M12 2a10 10 0 000 20A10 10 0 0012 2zm0 18a8 8 0 110-16 8 8 0 010 16z" opacity=".3"/><path d="M12 2a10 10 0 0110 10h-2A8 8 0 0012 4V2z"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  }
+
+  // ── Add to Leads: message selection ─────────────────────────────────────────
+
+  const selected = new Set();
+
+  function toggleSelectMode() {
+    const on = !document.body.classList.contains('select-mode');
+    document.body.classList.toggle('select-mode', on);
+    document.getElementById('selectBar').classList.toggle('show', on);
+    document.getElementById('leadModeBtn').classList.toggle('active', on);
+    const embedBtn = document.getElementById('leadModeBtnEmbed');
+    if (embedBtn) embedBtn.classList.toggle('active', on);
+    if (!on) {
+      selected.clear();
+      document.querySelectorAll('.msg-row.in.selected').forEach(r => r.classList.remove('selected'));
+    }
+    updateSelCount();
+  }
+
+  function toggleMsg(e, row, id) {
+    if (!document.body.classList.contains('select-mode')) return;
+    e.preventDefault();   // stop links/lightbox while selecting
+    if (selected.has(id)) { selected.delete(id); row.classList.remove('selected'); }
+    else { selected.add(id); row.classList.add('selected'); }
+    updateSelCount();
+  }
+
+  function updateSelCount() {
+    const n = selected.size;
+    document.getElementById('selCount').textContent = n ? (n + ' message' + (n > 1 ? 's' : '') + ' selected') : 'Tap messages to select';
+    document.getElementById('sbAddBtn').disabled = n === 0;
+  }
+
+  async function addSelectedToLeads() {
+    if (!selected.size) return;
+    const ids = [...selected].sort((a, b) => a - b);  // chronological (ids grow over time)
+
+    const parts = [];
+    let date = '';
+    ids.forEach(id => {
+      const d = (window.MSG_DATA || {})[id];
+      if (!d) return;
+      let line = d.text || '';
+      if (d.media) {
+        const desc = d.type.charAt(0).toUpperCase() + d.type.slice(1) + ': ' + d.media;
+        line = line ? (line + '\n' + desc) : desc;
+      }
+      if (line) parts.push(line);
+      if (d.date > date) date = d.date;
+    });
+
+    const btn = document.getElementById('sbAddBtn');
+    btn.disabled = true; btn.textContent = 'Adding…';
+
+    try {
+      const res = await fetch('/alabama/api/leads/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({
+          date: date || new Date().toISOString().slice(0, 10),
+          mobileNo: SENDER,
+          name: SENDER_NAME || '',
+          platform: 'Whatsapp',
+          items: parts.join('\n'),
+          dedupeBySender: true,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.appended)      showToast('Added ' + data.added + ' message' + (data.added > 1 ? 's' : '') + ' to lead', '#111827');
+        else if (data.duplicate) showToast('Already in Leads — nothing new', '#d97706');
+        else                     showToast('Lead created', '#111827');
+        toggleSelectMode();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || err.date || 'Failed to add', '#dc2626');
+        btn.disabled = false; btn.textContent = 'Add to Leads';
+      }
+    } catch {
+      showToast('Network error', '#dc2626');
+      btn.disabled = false; btn.textContent = 'Add to Leads';
+    }
+  }
+
+  function openLightbox(src) {
+    if (document.body.classList.contains('select-mode')) return;
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('show');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('show');
+  }
+
+  function showToast(msg, bg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = bg || '#333';
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 2500);
+  }
+
+  // When embedded in the WhatsApp-Web shell, tell the parent we just replied so
+  // it can clear the unread dot on this conversation row without a reload.
+  function notifyParentReplied() {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        { type: 'wa-replied', sender: SENDER, number: ACTIVE_NUMBER }, '*');
+    }
+  }
+</script>
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</body>
+</html>

@@ -57,7 +57,7 @@ def upload_header_image(file_bytes, mime_type, filename, phone_id):
 
 def send_broadcast(numbers, *, template, language='en', phone_id=DEFAULT_PHONE_ID,
                    caption=None, header_image_id=None, header_image_url=None,
-                   chat_media_name=None, on_progress=None):
+                   chat_media_name=None, on_progress=None, outbound_model=WhatsAppOutbound):
     """Send the template to every number and record each send.
 
     Image inputs are pre-resolved by the caller:
@@ -66,6 +66,7 @@ def send_broadcast(numbers, *, template, language='en', phone_id=DEFAULT_PHONE_I
         thread shows the broadcast as an image bubble.
 
     on_progress(i, number, ok) is called after each send, if given.
+    `outbound_model` lets the Alabama site log into its own outbound table.
     Returns dict(sent, failed, errors).
     """
     caption = caption or f'Broadcast: {template}'
@@ -83,7 +84,7 @@ def send_broadcast(numbers, *, template, language='en', phone_id=DEFAULT_PHONE_I
         )
         if msg_id:
             sent += 1
-            rec = WhatsAppOutbound(
+            rec = outbound_model(
                 recipient=number,
                 business_phone_id=phone_id,
                 msg_type='image' if chat_media_name else 'text',

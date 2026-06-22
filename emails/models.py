@@ -75,3 +75,81 @@ class EmailAttachment(models.Model):
 
     def __str__(self):
         return self.filename or f'Attachment #{self.pk}'
+
+
+# ── Alabama (sister company) ───────────────────────────────────────────────
+# Same fields as the email models, stored in separate alabama_* tables so
+# Alabama's mailbox/data stays isolated from Junaid's. Served at /alabama/emails/.
+
+class AlabamaEmailSettings(models.Model):
+    """Singleton — IMAP/SMTP credentials for Alabama's sales mailbox."""
+
+    email_address = models.EmailField(blank=True)
+    display_name  = models.CharField(max_length=255, blank=True)
+    password      = models.CharField(max_length=255, blank=True)
+
+    imap_host    = models.CharField(max_length=255, blank=True)
+    imap_port    = models.PositiveIntegerField(default=993)
+    smtp_host    = models.CharField(max_length=255, blank=True)
+    smtp_port    = models.PositiveIntegerField(default=465)
+    smtp_use_ssl = models.BooleanField(default=True)
+
+    enabled         = models.BooleanField(default=False)
+    fetch_since     = models.DateField(null=True, blank=True)
+    last_fetch_at   = models.DateTimeField(null=True, blank=True)
+    last_fetch_info = models.CharField(max_length=255, blank=True)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'alabama_emailsettings'
+        verbose_name = 'Alabama email settings'
+        verbose_name_plural = 'Alabama email settings'
+
+    def __str__(self):
+        return self.email_address or 'Alabama email settings (not configured)'
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def is_configured(self):
+        return bool(self.email_address and self.password and self.imap_host and self.smtp_host)
+
+
+class AlabamaEmailLog(models.Model):
+    DIRECTIONS = EmailLog.DIRECTIONS
+
+    direction        = models.CharField(max_length=3, choices=DIRECTIONS, default='in')
+    counterpart      = models.CharField(max_length=255)
+    counterpart_name = models.CharField(max_length=255, blank=True)
+    subject          = models.TextField(blank=True)
+    body             = models.TextField(blank=True)
+    message_id       = models.CharField(max_length=512, unique=True)
+    in_reply_to      = models.CharField(max_length=512, blank=True)
+    received_at      = models.DateTimeField(default=timezone.now)
+    replied          = models.BooleanField(default=False)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'alabama_emaillog'
+        ordering = ['-received_at']
+
+    def __str__(self):
+        arrow = '←' if self.direction == 'in' else '→'
+        return f'{arrow} {self.counterpart} — {self.subject[:60]}'
+
+
+class AlabamaEmailAttachment(models.Model):
+    email        = models.ForeignKey(AlabamaEmailLog, on_delete=models.CASCADE, related_name='attachments')
+    file         = models.FileField(upload_to='email_attachments/')
+    filename     = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    size         = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'alabama_emailattachment'
+
+    def __str__(self):
+        return self.filename or f'Attachment #{self.pk}'
