@@ -28,7 +28,6 @@ class LogCallView(APIView):
             log = serializer.save()
 
             if log.direction == 'incoming':
-                # Auto-create a CallLead for every incoming call
                 CallLead.objects.get_or_create(
                     call_log=log,
                     defaults=dict(
@@ -42,7 +41,6 @@ class LogCallView(APIView):
                 )
 
             elif log.direction == 'outgoing' and log.status == 'answered':
-                # Check if we called back a missed lead within the last 24 hours
                 cutoff = log.timestamp - timezone.timedelta(hours=24)
                 missed_leads = CallLead.objects.filter(
                     caller_number=log.caller_number,
@@ -159,7 +157,6 @@ def call_leads_dashboard(request):
     if search:     qs = qs.filter(caller_number__icontains=search)
     if sim_f:      qs = qs.filter(sim=sim_f)
 
-    # Distinct SIM lines across all leads, for the "number" filter dropdown.
     all_sims = (CallLead.objects.exclude(sim='')
                 .values_list('sim', flat=True).distinct().order_by('sim'))
 
@@ -187,7 +184,6 @@ def call_leads_dashboard(request):
 def update_call_lead(request, pk):
     lead = get_object_or_404(CallLead, pk=pk)
 
-    # File upload (multipart)
     if request.method == 'POST' and request.FILES.get('quotation_file'):
         f = request.FILES['quotation_file']
         if lead.quotation_file:
@@ -201,7 +197,6 @@ def update_call_lead(request, pk):
             'name': lead.quotation_filename,
         })
 
-    # Delete quotation file
     if request.method == 'POST' and request.POST.get('delete_quotation'):
         if lead.quotation_file:
             lead.quotation_file.delete(save=False)
@@ -210,7 +205,6 @@ def update_call_lead(request, pk):
         lead.save()
         return JsonResponse({'ok': True})
 
-    # JSON field update
     if request.method == 'POST':
         data = json.loads(request.body)
         if 'query'          in data: lead.query          = data['query']
