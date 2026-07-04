@@ -28,6 +28,20 @@ class CallLog(models.Model):
         return f'{self.caller_number} → {self.received_by} [{self.status}]'
 
 
+class ExcludedNumber(models.Model):
+    """A phone number to hide everywhere. Calls to/from this number are filtered
+    out of the Call Log and Call Leads dashboards (matched on caller_number)."""
+    number     = models.CharField(max_length=50, unique=True)
+    note       = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.number
+
+
 class CallLead(models.Model):
     LEAD_STATUS = [
         ('active',      'Active'),
@@ -90,6 +104,20 @@ class AlabamaCallLog(models.Model):
 
     def __str__(self):
         return f'{self.caller_number} → {self.received_by} [{self.status}]'
+
+
+class AlabamaExcludedNumber(models.Model):
+    """Alabama's own hidden-numbers list (isolated from Junaid's)."""
+    number     = models.CharField(max_length=50, unique=True)
+    note       = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'alabama_excludednumber'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.number
 
 
 class AlabamaCallLead(models.Model):

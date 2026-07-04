@@ -8,7 +8,7 @@ from django.shortcuts import render
 from django.http import FileResponse, Http404
 
 from leads.views import whatsapp_dashboard, mark_replied, whatsapp_chat, whatsapp_broadcast, whatsapp_broadcast_status
-from call_logs.views import calls_dashboard, call_leads_dashboard
+from call_logs.views import calls_dashboard, call_leads_dashboard, excluded_numbers_page, delete_excluded_number
 from emails.views import email_dashboard, email_thread, email_settings_page
 from crm_project.alabama_db import tpl
 
@@ -64,6 +64,8 @@ urlpatterns = [
     path('emails/thread/<str:address>/', email_thread, name='email-thread'),
     path('calls/', calls_dashboard, name='calls-dashboard'),
     path('call-leads/', call_leads_dashboard, name='call-leads'),
+    path('call-exclusions/', excluded_numbers_page, name='call-exclusions'),
+    path('call-exclusions/<int:pk>/delete/', delete_excluded_number, name='call-exclusion-delete'),
 
     # ── Alabama (sister company): the full app on this same site at /alabama/*.
     # Reuses the CRM views; the AlabamaRouter sends their DB reads/writes to the
@@ -85,6 +87,8 @@ urlpatterns = [
     path('alabama/emails/thread/<str:address>/', email_thread, name='alabama-email-thread'),
     path('alabama/calls/', calls_dashboard, name='alabama-calls-dashboard'),
     path('alabama/call-leads/', call_leads_dashboard, name='alabama-call-leads'),
+    path('alabama/call-exclusions/', excluded_numbers_page, name='alabama-call-exclusions'),
+    path('alabama/call-exclusions/<int:pk>/delete/', delete_excluded_number, name='alabama-call-exclusion-delete'),
 
     path('', landing, name='home'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

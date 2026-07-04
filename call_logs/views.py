@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -11,8 +11,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from crm_project.alabama_db import tpl, pick
-from .models import CallLog, CallLead, AlabamaCallLog, AlabamaCallLead
+from crm_project.alabama_db import tpl, pick, is_alabama
+from .models import (
+    CallLog, CallLead, AlabamaCallLog, AlabamaCallLead,
+    ExcludedNumber, AlabamaExcludedNumber,
+)
 from .serializers import (
     CallLogCreateSerializer, CallLogSerializer,
     AlabamaCallLogCreateSerializer, AlabamaCallLogSerializer,
@@ -98,17 +101,25 @@ class CallLogListView(APIView):
 
 # ── Calls dashboard ───────────────────────────────────────────────────────────
 
+def excluded_numbers(request):
+    """List of numbers to hide from Call Log / Call Leads (per site)."""
+    ExcludedM = pick(request, ExcludedNumber, AlabamaExcludedNumber)
+    return list(ExcludedM.objects.values_list('number', flat=True))
+
+
 @login_required
 def calls_dashboard(request):
     CallLogM = pick(request, CallLog, AlabamaCallLog)
     today = timezone.now().date()
 
-    today_qs       = CallLogM.objects.filter(timestamp__date=today)
+    excluded = excluded_numbers(request)
+
+    today_qs       = CallLogM.objects.exclude(caller_number__in=excluded).filter(timestamp__date=today)
     today_total    = today_qs.count()
     today_answered = today_qs.filter(status='answered').count()
     today_missed   = today_qs.filter(status='missed').count()
 
-    qs = CallLogM.objects.all()
+    qs = CallLogM.objects.exclude(caller_number__in=excluded)
 
     status_f  = request.GET.get('status', '').strip()
     device_f  = request.GET.get('device', '').strip()
@@ -154,7 +165,8 @@ def call_leads_dashboard(request):
     sim_f     = request.GET.get('sim', '').strip()
     device_f  = request.GET.get('device', '').strip()
 
-    qs = CallLeadM.objects.select_related('call_log').all()
+    excluded = excluded_numbers(request)
+    qs = CallLeadM.objects.select_related('call_log').exclude(caller_number__in=excluded)
 
     if tab == 'junk':
         qs = qs.filter(lead_status__in=['junk', 'irrelevant'])
@@ -180,12 +192,15 @@ def call_leads_dashboard(request):
 
     today = timezone.now().date()
 
+    # Tab counts exclude hidden numbers too, so they match the visible rows.
+    counts_qs = CallLeadM.objects.exclude(caller_number__in=excluded)
+
     return render(request, tpl(request, 'call_leads.html'), {
         'leads':        qs,
-        'total_active': CallLeadM.objects.filter(lead_status='active').count(),
-        'total_missed': CallLeadM.objects.filter(lead_status='active', call_status='missed').count(),
-        'total_followup': CallLeadM.objects.filter(lead_status='active', follow_up__isnull=False, follow_up__lte=today).count(),
-        'total_junk':   CallLeadM.objects.filter(lead_status__in=['junk','irrelevant']).count(),
+        'total_active': counts_qs.filter(lead_status='active').count(),
+        'total_missed': counts_qs.filter(lead_status='active', call_status='missed').count(),
+        'total_followup': counts_qs.filter(lead_status='active', follow_up__isnull=False, follow_up__lte=today).count(),
+        'total_junk':   counts_qs.filter(lead_status__in=['junk','irrelevant']).count(),
         'tab':          tab,
         'from_date':    from_date,
         'to_date':      to_date,
@@ -265,3 +280,34 @@ def set_lead_status(request, pk):
         lead.lead_status = new_status
         lead.save()
     return JsonResponse({'ok': True, 'status': lead.lead_status})
+
+
+# ── Excluded numbers ──────────────────────────────────────────────────────────
+
+@login_required
+def excluded_numbers_page(request):
+    """Manage the hidden-numbers list. Calls to/from these numbers are dropped
+    from the Call Log and Call Leads dashboards for this site."""
+    ExcludedM = pick(request, ExcludedNumber, AlabamaExcludedNumber)
+    base = '/alabama' if is_alabama(request) else ''
+
+    if request.method == 'POST':
+        number = request.POST.get('number', '').strip()
+        note   = request.POST.get('note', '').strip()
+        if number:
+            ExcludedM.objects.get_or_create(number=number, defaults={'note': note})
+        return redirect(base + '/call-exclusions/')
+
+    return render(request, tpl(request, 'call_exclusions.html'), {
+        'excluded':  ExcludedM.objects.all(),
+        'base':      base,
+    })
+
+
+@login_required
+@require_POST
+def delete_excluded_number(request, pk):
+    ExcludedM = pick(request, ExcludedNumber, AlabamaExcludedNumber)
+    ExcludedM.objects.filter(pk=pk).delete()
+    base = '/alabama' if is_alabama(request) else ''
+    return redirect(base + '/call-exclusions/')

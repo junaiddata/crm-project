@@ -1,5 +1,22 @@
 from django.contrib import admin
-from .models import CallLog, CallLead, AlabamaCallLog, AlabamaCallLead
+from .models import (
+    CallLog, CallLead, AlabamaCallLog, AlabamaCallLead,
+    ExcludedNumber, AlabamaExcludedNumber,
+)
+
+
+@admin.register(ExcludedNumber)
+class ExcludedNumberAdmin(admin.ModelAdmin):
+    list_display  = ('number', 'note', 'created_at')
+    search_fields = ('number', 'note')
+    ordering      = ('-created_at',)
+
+
+@admin.register(AlabamaExcludedNumber)
+class AlabamaExcludedNumberAdmin(admin.ModelAdmin):
+    list_display  = ('number', 'note', 'created_at')
+    search_fields = ('number', 'note')
+    ordering      = ('-created_at',)
 
 
 @admin.register(CallLog)
