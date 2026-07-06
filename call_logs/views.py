@@ -2,10 +2,13 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -107,6 +110,24 @@ def excluded_numbers(request):
     return list(ExcludedM.objects.values_list('number', flat=True))
 
 
+def _filtered_call_logs(request):
+    """Call Log rows after exclusions + the status/device/SIM/date filters —
+    the exact set shown on the Call Log dashboard (and its Excel export)."""
+    CallLogM = pick(request, CallLog, AlabamaCallLog)
+    qs = CallLogM.objects.exclude(caller_number__in=excluded_numbers(request))
+    status_f  = request.GET.get('status', '').strip()
+    device_f  = request.GET.get('device', '').strip()
+    sim_f     = request.GET.get('sim', '').strip()
+    from_date = request.GET.get('from_date', '').strip()
+    to_date   = request.GET.get('to_date', '').strip()
+    if status_f:   qs = qs.filter(status=status_f)
+    if device_f:   qs = qs.filter(received_by=device_f)
+    if sim_f:      qs = qs.filter(sim=sim_f)
+    if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
+    if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
+    return qs
+
+
 @login_required
 def calls_dashboard(request):
     CallLogM = pick(request, CallLog, AlabamaCallLog)
@@ -114,19 +135,13 @@ def calls_dashboard(request):
 
     excluded = excluded_numbers(request)
 
-    qs = CallLogM.objects.exclude(caller_number__in=excluded)
+    qs = _filtered_call_logs(request)
 
     status_f  = request.GET.get('status', '').strip()
     device_f  = request.GET.get('device', '').strip()
     sim_f     = request.GET.get('sim', '').strip()
     from_date = request.GET.get('from_date', '').strip()
     to_date   = request.GET.get('to_date', '').strip()
-
-    if status_f:   qs = qs.filter(status=status_f)
-    if device_f:   qs = qs.filter(received_by=device_f)
-    if sim_f:      qs = qs.filter(sim=sim_f)
-    if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
-    if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
     # Stats honor the device / SIM / date filters so the cards match what is
     # being viewed. The status filter is intentionally ignored here because the
@@ -169,8 +184,9 @@ def calls_dashboard(request):
 
 # ── Call Leads dashboard ──────────────────────────────────────────────────────
 
-@login_required
-def call_leads_dashboard(request):
+def _filtered_call_leads(request):
+    """Call Lead rows after exclusions + tab + shared filters — the exact set
+    shown on the Call Leads dashboard (and its Excel export)."""
     CallLeadM = pick(request, CallLead, AlabamaCallLead)
     tab       = request.GET.get('tab', 'active')
     from_date = request.GET.get('from_date', '').strip()
@@ -179,8 +195,8 @@ def call_leads_dashboard(request):
     sim_f     = request.GET.get('sim', '').strip()
     device_f  = request.GET.get('device', '').strip()
 
-    excluded = excluded_numbers(request)
-    qs = CallLeadM.objects.select_related('call_log').exclude(caller_number__in=excluded)
+    qs = CallLeadM.objects.select_related('call_log').exclude(
+        caller_number__in=excluded_numbers(request))
 
     if tab == 'junk':
         qs = qs.filter(lead_status__in=['junk', 'irrelevant'])
@@ -196,6 +212,21 @@ def call_leads_dashboard(request):
     if search:     qs = qs.filter(caller_number__icontains=search)
     if sim_f:      qs = qs.filter(sim=sim_f)
     if device_f:   qs = qs.filter(received_by=device_f)
+    return qs
+
+
+@login_required
+def call_leads_dashboard(request):
+    CallLeadM = pick(request, CallLead, AlabamaCallLead)
+    tab       = request.GET.get('tab', 'active')
+    from_date = request.GET.get('from_date', '').strip()
+    to_date   = request.GET.get('to_date', '').strip()
+    search    = request.GET.get('q', '').strip()
+    sim_f     = request.GET.get('sim', '').strip()
+    device_f  = request.GET.get('device', '').strip()
+
+    excluded = excluded_numbers(request)
+    qs = _filtered_call_leads(request)
 
     # Distinct SIM lines across all leads, for the "number" filter dropdown.
     all_sims = (CallLeadM.objects.exclude(sim='')
@@ -337,3 +368,93 @@ def delete_excluded_number(request, pk):
     ExcludedM.objects.filter(pk=pk).delete()
     base = '/alabama' if is_alabama(request) else ''
     return redirect(base + '/call-exclusions/')
+
+
+# ── Excel exports ─────────────────────────────────────────────────────────────
+
+def _fmt_duration(secs):
+    """Seconds → m:ss (e.g. 125 → '2:05'). 0/blank → '—'."""
+    secs = int(secs or 0)
+    if secs <= 0:
+        return '—'
+    return f'{secs // 60}:{secs % 60:02d}'
+
+
+def _fmt_dt(dt, with_time=True):
+    """Format a (possibly tz-aware) datetime/date for a spreadsheet cell."""
+    if not dt:
+        return ''
+    if hasattr(dt, 'hour') and timezone.is_aware(dt):
+        dt = timezone.localtime(dt)
+    return dt.strftime('%Y-%m-%d %H:%M' if with_time else '%Y-%m-%d')
+
+
+def _xlsx_response(filename, sheet_title, headers, rows, widths=None):
+    """Build an .xlsx download from header labels + a list of row lists."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = sheet_title
+
+    ws.append(headers)
+    head_fill = PatternFill('solid', fgColor='111827')
+    head_font = Font(bold=True, color='FFFFFF')
+    for cell in ws[1]:
+        cell.fill = head_fill
+        cell.font = head_font
+        cell.alignment = Alignment(vertical='center', wrap_text=True)
+
+    wrap_top = Alignment(vertical='top', wrap_text=True)
+    for row in rows:
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = wrap_top
+
+    for i, header in enumerate(headers, 1):
+        col = openpyxl.utils.get_column_letter(i)
+        ws.column_dimensions[col].width = (widths or {}).get(header, 16)
+
+    ws.freeze_panes = 'A2'
+    ws.auto_filter.ref = ws.dimensions
+
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(resp)
+    return resp
+
+
+@login_required
+def export_calls_xlsx(request):
+    """Download the Call Log as an Excel file, honoring the current filters."""
+    qs = _filtered_call_logs(request)
+    headers = ['#', 'Number', 'Received By', 'SIM', 'Direction',
+               'Status', 'Duration', 'Date & Time']
+    rows = [[
+        i, c.caller_number, c.received_by, c.sim, c.get_direction_display(),
+        c.get_status_display(), _fmt_duration(c.duration), _fmt_dt(c.timestamp),
+    ] for i, c in enumerate(qs, 1)]
+
+    widths = {'Number': 18, 'Received By': 20, 'SIM': 16, 'Date & Time': 18}
+    fname = f'call_logs_{timezone.now().date():%Y-%m-%d}.xlsx'
+    return _xlsx_response(fname, 'Call Log', headers, rows, widths)
+
+
+@login_required
+def export_call_leads_xlsx(request):
+    """Download the Call Leads list as an Excel file, honoring tab + filters."""
+    qs = _filtered_call_leads(request)
+    headers = ['#', 'Number', 'Call Status', 'Duration', 'Date & Time', 'Device',
+               'SIM', 'Query', 'Quotation', 'Follow Up', 'Follow-up Note',
+               'Notes', 'Lead Status', 'Returned Call']
+    rows = [[
+        i, l.caller_number, (l.call_status or '').title(), _fmt_duration(l.duration),
+        _fmt_dt(l.call_time), l.received_by, l.sim, l.query, l.quotation_filename,
+        _fmt_dt(l.follow_up, with_time=False), l.follow_up_note, l.notes,
+        l.get_lead_status_display(), 'Yes' if l.return_called else '',
+    ] for i, l in enumerate(qs, 1)]
+
+    widths = {'Number': 18, 'Date & Time': 18, 'Device': 20, 'SIM': 16,
+              'Query': 34, 'Quotation': 24, 'Follow-up Note': 28, 'Notes': 34}
+    tab = request.GET.get('tab', 'active')
+    fname = f'call_leads_{tab}_{timezone.now().date():%Y-%m-%d}.xlsx'
+    return _xlsx_response(fname, 'Call Leads', headers, rows, widths)

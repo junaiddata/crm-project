@@ -8,7 +8,10 @@ from django.shortcuts import render
 from django.http import FileResponse, Http404
 
 from leads.views import whatsapp_dashboard, mark_replied, whatsapp_chat, whatsapp_broadcast, whatsapp_broadcast_status
-from call_logs.views import calls_dashboard, call_leads_dashboard, excluded_numbers_page, delete_excluded_number
+from call_logs.views import (
+    calls_dashboard, call_leads_dashboard, excluded_numbers_page, delete_excluded_number,
+    export_calls_xlsx, export_call_leads_xlsx,
+)
 from emails.views import email_dashboard, email_thread, email_settings_page
 from crm_project.alabama_db import tpl
 
@@ -63,7 +66,9 @@ urlpatterns = [
     path('emails/settings/', email_settings_page, name='email-settings'),
     path('emails/thread/<str:address>/', email_thread, name='email-thread'),
     path('calls/', calls_dashboard, name='calls-dashboard'),
+    path('calls/export.xlsx', export_calls_xlsx, name='calls-export'),
     path('call-leads/', call_leads_dashboard, name='call-leads'),
+    path('call-leads/export.xlsx', export_call_leads_xlsx, name='call-leads-export'),
     path('call-exclusions/', excluded_numbers_page, name='call-exclusions'),
     path('call-exclusions/<int:pk>/delete/', delete_excluded_number, name='call-exclusion-delete'),
 
@@ -86,7 +91,9 @@ urlpatterns = [
     path('alabama/emails/settings/', email_settings_page, name='alabama-email-settings'),
     path('alabama/emails/thread/<str:address>/', email_thread, name='alabama-email-thread'),
     path('alabama/calls/', calls_dashboard, name='alabama-calls-dashboard'),
+    path('alabama/calls/export.xlsx', export_calls_xlsx, name='alabama-calls-export'),
     path('alabama/call-leads/', call_leads_dashboard, name='alabama-call-leads'),
+    path('alabama/call-leads/export.xlsx', export_call_leads_xlsx, name='alabama-call-leads-export'),
     path('alabama/call-exclusions/', excluded_numbers_page, name='alabama-call-exclusions'),
     path('alabama/call-exclusions/<int:pk>/delete/', delete_excluded_number, name='alabama-call-exclusion-delete'),
 

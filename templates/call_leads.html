@@ -242,6 +242,11 @@
     {% if search or from_date or to_date or active_sim or active_device %}
     <a href="?tab={{ tab }}" style="color:#64748b;font-size:13px;text-decoration:none;">Clear</a>
     {% endif %}
+    <a href="/call-leads/export.xlsx?{{ request.GET.urlencode }}" class="btn-apply"
+       style="background:#166534;display:inline-flex;align-items:center;gap:5px;text-decoration:none;">
+      <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-2.293a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L11 11.586V3a1 1 0 10-2 0v8.586L6.707 9.293a1 1 0 00-1.414 1.414l4 4z"/></svg>
+      Export Excel
+    </a>
     <button type="button" class="btn-apply" onclick="exportCallLeadsPDF()"
             style="background:#111827;display:inline-flex;align-items:center;gap:5px;">
       <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm6.293-2.293a1 1 0 001.414 0l4-4a1 1 0 00-1.414-1.414L11 11.586V3a1 1 0 10-2 0v8.586L6.707 9.293a1 1 0 00-1.414 1.414l4 4z"/></svg>
