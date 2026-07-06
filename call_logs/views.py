@@ -292,10 +292,15 @@ def excluded_numbers_page(request):
     base = '/alabama' if is_alabama(request) else ''
 
     if request.method == 'POST':
-        number = request.POST.get('number', '').strip()
+        # Accept one or many numbers — one per line (also split on commas).
+        raw    = request.POST.get('number', '')
         note   = request.POST.get('note', '').strip()
-        if number:
-            ExcludedM.objects.get_or_create(number=number, defaults={'note': note})
+        seen   = set()
+        for line in raw.replace(',', '\n').splitlines():
+            number = line.strip()
+            if number and number not in seen:
+                seen.add(number)
+                ExcludedM.objects.get_or_create(number=number, defaults={'note': note})
         return redirect(base + '/call-exclusions/')
 
     return render(request, tpl(request, 'call_exclusions.html'), {

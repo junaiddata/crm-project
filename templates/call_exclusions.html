@@ -41,16 +41,21 @@
     .card h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
     .card p.hint { color: #64748b; font-size: 12.5px; margin-bottom: 16px; }
 
-    form.add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    form.add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field label { font-size: 11.5px; font-weight: 600; color: #64748b; }
-    .field input {
+    .field input, .field textarea {
       height: 38px; padding: 0 12px; border: 1px solid #dde3ea; border-radius: 8px;
       font-size: 13px; color: #334155; background: #fff; font-family: inherit; outline: none;
     }
-    .field input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-    .field.num input { width: 200px; }
+    .field textarea {
+      height: auto; padding: 9px 12px; resize: vertical; min-height: 92px;
+      line-height: 1.5; font-family: monospace;
+    }
+    .field input:focus, .field textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .field.num textarea { width: 220px; }
     .field.note input { width: 240px; }
+    .btn-add { margin-top: 19px; }
     .btn {
       height: 38px; padding: 0 20px; border-radius: 8px; font-size: 12.5px; font-weight: 600;
       border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
@@ -102,13 +107,13 @@
 
 <div class="wrap">
   <div class="card">
-    <h2>Add a number to exclude</h2>
-    <p class="hint">Calls <strong>to and from</strong> this number will be hidden from the Call Log and Call Leads pages. Enter the number exactly as it appears in the call list.</p>
+    <h2>Add numbers to exclude</h2>
+    <p class="hint">Calls <strong>to and from</strong> these numbers will be hidden from the Call Log and Call Leads pages. Enter <strong>one number per line</strong> (or comma-separated) to add several at once. Type each number exactly as it appears in the call list.</p>
     <form method="post" action="{{ base }}/call-exclusions/" class="add-form">
       {% csrf_token %}
       <div class="field num">
-        <label for="number">Phone number</label>
-        <input type="text" id="number" name="number" placeholder="+9715XXXXXXXX" required>
+        <label for="number">Phone number(s)</label>
+        <textarea id="number" name="number" rows="4" placeholder="+9715XXXXXXXX&#10;+9714XXXXXXXX&#10;+9715YYYYYYYY" required></textarea>
       </div>
       <div class="field note">
         <label for="note">Note (optional)</label>
