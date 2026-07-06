@@ -114,11 +114,6 @@ def calls_dashboard(request):
 
     excluded = excluded_numbers(request)
 
-    today_qs       = CallLogM.objects.exclude(caller_number__in=excluded).filter(timestamp__date=today)
-    today_total    = today_qs.count()
-    today_answered = today_qs.filter(status='answered').count()
-    today_missed   = today_qs.filter(status='missed').count()
-
     qs = CallLogM.objects.exclude(caller_number__in=excluded)
 
     status_f  = request.GET.get('status', '').strip()
@@ -133,6 +128,24 @@ def calls_dashboard(request):
     if from_date:  qs = qs.filter(timestamp__date__gte=from_date)
     if to_date:    qs = qs.filter(timestamp__date__lte=to_date)
 
+    # Stats honor the device / SIM / date filters so the cards match what is
+    # being viewed. The status filter is intentionally ignored here because the
+    # cards already break the results down by status. With no scoping filter
+    # active they fall back to today's numbers.
+    stats_qs = CallLogM.objects.exclude(caller_number__in=excluded)
+    if device_f:   stats_qs = stats_qs.filter(received_by=device_f)
+    if sim_f:      stats_qs = stats_qs.filter(sim=sim_f)
+    if from_date:  stats_qs = stats_qs.filter(timestamp__date__gte=from_date)
+    if to_date:    stats_qs = stats_qs.filter(timestamp__date__lte=to_date)
+
+    stats_scoped = bool(device_f or sim_f or from_date or to_date)
+    if not stats_scoped:
+        stats_qs = stats_qs.filter(timestamp__date=today)
+
+    stat_total    = stats_qs.count()
+    stat_answered = stats_qs.filter(status='answered').count()
+    stat_missed   = stats_qs.filter(status='missed').count()
+
     all_devices = CallLogM.objects.values_list('received_by', flat=True).distinct().order_by('received_by')
     all_sims    = (CallLogM.objects.exclude(sim='')
                    .values_list('sim', flat=True).distinct().order_by('sim'))
@@ -140,9 +153,10 @@ def calls_dashboard(request):
     return render(request, tpl(request, 'calls_dashboard.html'), {
         'calls':          qs,
         'shown_count':    qs.count(),
-        'today_total':    today_total,
-        'today_answered': today_answered,
-        'today_missed':   today_missed,
+        'stat_total':     stat_total,
+        'stat_answered':  stat_answered,
+        'stat_missed':    stat_missed,
+        'stats_scoped':   stats_scoped,
         'all_devices':    all_devices,
         'all_sims':       all_sims,
         'active_status':  status_f,
@@ -192,8 +206,15 @@ def call_leads_dashboard(request):
 
     today = timezone.now().date()
 
-    # Tab counts exclude hidden numbers too, so they match the visible rows.
+    # Stat cards exclude hidden numbers and honor the shared filters (date range,
+    # search, SIM, phone) so they match the current view. They do NOT apply the
+    # tab filter — each card is its own category.
     counts_qs = CallLeadM.objects.exclude(caller_number__in=excluded)
+    if from_date:  counts_qs = counts_qs.filter(call_time__date__gte=from_date)
+    if to_date:    counts_qs = counts_qs.filter(call_time__date__lte=to_date)
+    if search:     counts_qs = counts_qs.filter(caller_number__icontains=search)
+    if sim_f:      counts_qs = counts_qs.filter(sim=sim_f)
+    if device_f:   counts_qs = counts_qs.filter(received_by=device_f)
 
     return render(request, tpl(request, 'call_leads.html'), {
         'leads':        qs,
