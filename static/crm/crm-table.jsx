@@ -19,6 +19,9 @@ const TABLE_COLUMNS = [
 function FileCell({ lead, onUpdateLead }) {
   const inputRef = React.useRef(null);
   const fd = lead.quotationFile;
+  const uploadedBy = lead.quotationUploadedBy || '';
+  const [editingName, setEditingName] = React.useState(false);
+  const [nameVal, setNameVal] = React.useState('');
 
   function handleFile(e) {
     const file = e.target.files[0];
@@ -39,6 +42,14 @@ function FileCell({ lead, onUpdateLead }) {
   function removeFile(e) {
     e.stopPropagation();
     onUpdateLead(lead.id, { quotationFile: null });
+  }
+
+  // The uploader's name is write-once: save a non-empty value, then it's locked.
+  function saveName() {
+    const v = nameVal.trim();
+    setEditingName(false);
+    setNameVal('');
+    if (v) onUpdateLead(lead.id, { quotationUploadedBy: v });
   }
 
   return (
@@ -69,6 +80,30 @@ function FileCell({ lead, onUpdateLead }) {
           Upload
         </button>
       )}
+
+      {/* Uploaded-by: only after a file is uploaded; type once, then it's locked */}
+      {uploadedBy ? (
+        <span className="crm-uploader-name" title={'Uploaded by ' + uploadedBy}>
+          <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" style={{flexShrink:0,opacity:0.55}}>
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+          </svg>
+          <span>{uploadedBy}</span>
+        </span>
+      ) : (fd && fd.name) ? (
+        editingName ? (
+          <input className="crm-cell-input crm-cell-input-sm crm-uploader-input" value={nameVal} autoFocus
+            placeholder="Uploaded by…"
+            onChange={e => setNameVal(e.target.value)}
+            onBlur={saveName}
+            onKeyDown={e => {
+              if (e.key === 'Enter') saveName();
+              if (e.key === 'Escape') { setEditingName(false); setNameVal(''); }
+            }}
+          />
+        ) : (
+          <button className="crm-uploader-add" onClick={() => setEditingName(true)}>+ Uploaded by</button>
+        )
+      ) : null}
     </div>
   );
 }

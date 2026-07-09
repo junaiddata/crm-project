@@ -229,13 +229,13 @@
       <option value="{{ s }}" {% if s == active_sim %}selected{% endif %}>{{ s }}</option>
       {% endfor %}
     </select>
-    <select name="device" title="Filter by phone / device"
+    <!-- <select name="device" title="Filter by phone / device"
             style="height:34px;border:1px solid #cbd5e1;border-radius:6px;padding:0 8px;font-size:13px;color:#0f172a;background:#fff;">
       <option value="">All phones</option>
       {% for d in all_devices %}
       <option value="{{ d }}" {% if d == active_device %}selected{% endif %}>{{ d }}</option>
       {% endfor %}
-    </select>
+    </select> -->
     <input type="date" name="from_date" value="{{ from_date }}" title="From date">
     <input type="date" name="to_date" value="{{ to_date }}" title="To date">
     <button type="submit" class="btn-apply">Filter</button>

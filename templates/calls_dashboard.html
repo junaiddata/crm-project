@@ -198,13 +198,13 @@
       <option value="rejected" {% if active_status == 'rejected' %}selected{% endif %}>Rejected</option>
     </select>
 
-    <span class="filter-label">Device:</span>
+    <!-- <span class="filter-label">Device:</span>
     <select name="device" class="filter-select">
       <option value="" {% if not active_device %}selected{% endif %}>All devices</option>
       {% for device in all_devices %}
       <option value="{{ device }}" {% if active_device == device %}selected{% endif %}>{{ device }}</option>
       {% endfor %}
-    </select>
+    </select> -->
 
     <span class="filter-label">SIM:</span>
     <select name="sim" class="filter-select">

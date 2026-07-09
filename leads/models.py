@@ -45,6 +45,7 @@ class Lead(models.Model):
     sales_person     = models.CharField(max_length=100, blank=True)
     quotation        = models.CharField(max_length=100, blank=True)
     quotation_file   = models.FileField(upload_to='quotations/', blank=True, null=True)
+    quotation_uploaded_by = models.CharField(max_length=100, blank=True)  # who uploaded the quotation — set once, then locked
     quotation_date   = models.DateField(null=True, blank=True)
     follow_up1_date  = models.DateField(null=True, blank=True)
     follow_up1_notes = models.TextField(blank=True)
@@ -153,6 +154,7 @@ class AlabamaLead(models.Model):
     sales_person     = models.CharField(max_length=100, blank=True)
     quotation        = models.CharField(max_length=100, blank=True)
     quotation_file   = models.FileField(upload_to='quotations/', blank=True, null=True)
+    quotation_uploaded_by = models.CharField(max_length=100, blank=True)  # who uploaded the quotation — set once, then locked
     quotation_date   = models.DateField(null=True, blank=True)
     follow_up1_date  = models.DateField(null=True, blank=True)
     follow_up1_notes = models.TextField(blank=True)

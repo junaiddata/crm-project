@@ -8,6 +8,7 @@ class LeadSerializer(serializers.ModelSerializer):
     emailId         = serializers.CharField(source='email_id', allow_blank=True, required=False)
     salesPerson     = serializers.CharField(source='sales_person', allow_blank=True, required=False)
     quotation       = serializers.CharField(allow_blank=True, required=False)
+    quotationUploadedBy = serializers.CharField(source='quotation_uploaded_by', allow_blank=True, required=False)
     quotationDate   = serializers.DateField(source='quotation_date', allow_null=True, required=False)
     followUp1Date   = serializers.DateField(source='follow_up1_date', allow_null=True, required=False)
     followUp1Notes  = serializers.CharField(source='follow_up1_notes', allow_blank=True, required=False)
@@ -21,7 +22,7 @@ class LeadSerializer(serializers.ModelSerializer):
         model = Lead
         fields = [
             'id', 'date', 'mobileNo', 'emailId', 'name', 'platform', 'items',
-            'salesPerson', 'quotation', 'quotationFile', 'quotationDate',
+            'salesPerson', 'quotation', 'quotationFile', 'quotationUploadedBy', 'quotationDate',
             'followUp1Date', 'followUp1Notes', 'followUp2Date', 'followUp2Notes',
             'leadStatus', 'source',
         ]

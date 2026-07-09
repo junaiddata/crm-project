@@ -125,11 +125,12 @@ async function removeFile(id) {
 }
 
 function exportToCSV(leads) {
-  const headers = ['Date','Mobile No','Email ID','Name','Platform','Items','Sales Person','Quotation','Quotation File','Quotation Date','Follow Up 1 Date','Follow Up 1 Notes','Follow Up 2 Date','Follow Up 2 Notes','Lead Status'];
+  const headers = ['Date','Mobile No','Email ID','Name','Platform','Items','Sales Person','Quotation','Quotation File','Quotation Uploaded By','Quotation Date','Follow Up 1 Date','Follow Up 1 Notes','Follow Up 2 Date','Follow Up 2 Notes','Lead Status'];
   const rows = leads.map(l => [
     l.date, l.mobileNo, l.emailId, l.name, l.platform, l.items, l.salesPerson,
     l.quotation || '',
     (l.quotationFile && l.quotationFile.name) ? l.quotationFile.name : '',
+    l.quotationUploadedBy || '',
     l.quotationDate, l.followUp1Date, l.followUp1Notes,
     l.followUp2Date, l.followUp2Notes, l.leadStatus
   ].map(v => '"' + (v||'').replace(/"/g, '""') + '"').join(','));

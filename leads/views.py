@@ -304,6 +304,9 @@ class LeadDetailView(APIView):
             data = {k: v for k, v in data.items() if k not in ('date', 'mobileNo')}
         elif lead.source == 'email':
             data = {k: v for k, v in data.items() if k not in ('date', 'emailId')}
+        # The quotation uploader's name is write-once: once set it can't be changed.
+        if lead.quotation_uploaded_by:
+            data = {k: v for k, v in data.items() if k != 'quotationUploadedBy'}
         serializer = LeadSer(lead, data=data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
