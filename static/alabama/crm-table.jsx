@@ -302,7 +302,7 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
       return (
         <div className="crm-followup-display">
           {dt && <span className="crm-fu-date">{formatDateDisplay(dt)}</span>}
-          {nt && <span className="crm-fu-notes">{nt}</span>}
+          {nt && <span className="crm-fu-notes" title={nt}>{nt}</span>}
         </div>
       );
     }
