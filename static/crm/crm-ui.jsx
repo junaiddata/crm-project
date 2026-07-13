@@ -138,7 +138,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
 }
 
 // --- Lead Detail Modal (for Kanban card click) ---
-function LeadDetailModal({ lead, onUpdate, onClose }) {
+function LeadDetailModal({ lead, onUpdate, onDelete, onClose }) {
   const [form, setForm] = React.useState({ ...lead });
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
 
@@ -228,6 +228,7 @@ function LeadDetailModal({ lead, onUpdate, onClose }) {
           </div>
         </div>
         <div className="crm-modal-footer">
+          <button className="crm-btn crm-btn-danger" style={{ marginRight: 'auto' }} onClick={onDelete}>Delete Lead</button>
           <button className="crm-btn crm-btn-ghost" onClick={onClose}>Cancel</button>
           <button className="crm-btn crm-btn-primary" onClick={handleSave}>Save Changes</button>
         </div>

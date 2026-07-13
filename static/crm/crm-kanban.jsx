@@ -39,6 +39,10 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
                 <div key={lead.id} className="crm-kanban-card" onClick={() => setEditingLead(lead)}>
                   <div className="crm-kc-top">
                     <span className="crm-kc-name">{lead.name || '(Unnamed)'}</span>
+                    <button className="crm-del-btn" title="Delete lead"
+                      onClick={e => { e.stopPropagation(); onDeleteLead(lead.id); }}>
+                      <CrmIcon name="trash" size={13} />
+                    </button>
                   </div>
                   {lead.items && <div className="crm-kc-items"><ItemsCell text={lead.items} /></div>}
                   <div className="crm-kc-meta">
@@ -90,6 +94,7 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
         <LeadDetailModal
           lead={editingLead}
           onUpdate={updated => { onUpdateLead(updated.id, updated); setEditingLead(null); }}
+          onDelete={() => { onDeleteLead(editingLead.id); setEditingLead(null); }}
           onClose={() => setEditingLead(null)}
         />
       )}
