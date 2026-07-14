@@ -149,14 +149,15 @@ WHATSAPP_NUMBER_LABELS = {
 # Fill these in (or set the env vars) once Alabama's numbers are provisioned.
 ALABAMA_WHATSAPP_PHONE_NUMBER_IDS = [
     pid.strip() for pid in os.environ.get(
-        'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', '',
+        'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', '1255556730966771',
     ).split(',') if pid.strip()
 ]
 
 # Friendly labels for Alabama's Phone Number IDs (shown in its dashboard filters).
 #   'PHONE_NUMBER_ID': '+971 5x xxx xxxx',
 ALABAMA_WHATSAPP_NUMBER_LABELS = {
+    '1255556730966771': '+971 56 501 0548',
 }
 
 # The number Alabama's broadcast page defaults to (one of the IDs above).
-ALABAMA_WHATSAPP_DEFAULT_PHONE_ID = os.environ.get('ALABAMA_WHATSAPP_DEFAULT_PHONE_ID', '')
+ALABAMA_WHATSAPP_DEFAULT_PHONE_ID = os.environ.get('ALABAMA_WHATSAPP_DEFAULT_PHONE_ID', '1255556730966771')
