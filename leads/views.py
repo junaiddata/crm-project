@@ -43,11 +43,22 @@ def _verify_meta_signature(request):
     return hmac.compare_digest(expected, header_sig)
 
 
-def _process_whatsapp_payload(payload, allowed_phone_ids=None, lead_model=WhatsAppLead):
+def _lead_model_for_phone_id(business_phone_id):
+    """Pick WhatsAppLead vs AlabamaWhatsAppLead by which site owns this Phone Number ID.
+
+    Meta allows only ONE webhook callback URL per App, and Junaid + Alabama share
+    the same App — so a single inbound POST can't be routed by which URL it hit.
+    Route by the message's own phone_number_id instead."""
+    alabama_ids = getattr(settings, 'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', [])
+    return AlabamaWhatsAppLead if business_phone_id in alabama_ids else WhatsAppLead
+
+
+def _process_whatsapp_payload(payload, allowed_phone_ids=None):
     """Store inbound messages. When allowed_phone_ids is given, only messages
     received on those of OUR numbers are processed (others are ignored).
 
-    `lead_model` lets the Alabama webhook store into its own inbound table."""
+    Which inbox (Junaid vs Alabama) a message lands in is decided per-message
+    by its own phone_number_id, not by which URL the request hit."""
     for entry in payload.get('entry', []):
         for change in entry.get('changes', []):
             if change.get('field') != 'messages':
@@ -58,6 +69,8 @@ def _process_whatsapp_payload(payload, allowed_phone_ids=None, lead_model=WhatsA
             # Only handle numbers we own natively; ignore anything else.
             if allowed_phone_ids is not None and business_phone_id not in allowed_phone_ids:
                 continue
+
+            lead_model = _lead_model_for_phone_id(business_phone_id)
 
             # Map wa_id → profile name from the contacts block
             contact_names = {
@@ -105,8 +118,6 @@ def _process_whatsapp_payload(payload, allowed_phone_ids=None, lead_model=WhatsA
 
 @csrf_exempt
 def whatsapp_webhook(request):
-    lead_model = pick(request, WhatsAppLead, AlabamaWhatsAppLead)
-
     # ── Meta webhook verification handshake (GET) ─────────────────────────────
     if request.method == 'GET':
         mode      = request.GET.get('hub.mode')
@@ -137,11 +148,12 @@ def whatsapp_webhook(request):
     try:
         if internal_ok:
             # Trusted forward (e.g. old-number loop-back) — process everything.
-            _process_whatsapp_payload(payload, lead_model=lead_model)
+            _process_whatsapp_payload(payload)
         else:
-            # Direct from Meta — only handle the numbers this site owns.
-            _process_whatsapp_payload(payload, allowed_phone_ids=wa_phone_ids(request),
-                                      lead_model=lead_model)
+            # Direct from Meta — only handle numbers we own natively (Junaid + Alabama).
+            owned_ids = (getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', []) +
+                         getattr(settings, 'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', []))
+            _process_whatsapp_payload(payload, allowed_phone_ids=owned_ids)
     except Exception:
         logger.exception('Error processing WhatsApp webhook payload')
 
