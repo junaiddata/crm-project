@@ -250,8 +250,9 @@ class LeadListCreateView(APIView):
                         status=status.HTTP_200_OK,
                     )
 
-        # When adding from Email: one lead per customer address per DAY (same
-        # append-or-create behaviour as WhatsApp, keyed on email instead).
+        # When adding from Email: each "Add to Leads" click creates its own
+        # separate lead entry, keyed on email — we only skip creating one when
+        # the exact same message was already added, to avoid true duplicates.
         if request.data.get('dedupeByEmail'):
             email_addr = (request.data.get('emailId') or '').strip()
             lead_date  = (request.data.get('date') or '').strip()
@@ -259,28 +260,20 @@ class LeadListCreateView(APIView):
                 lookup = LeadM.objects.filter(email_id__iexact=email_addr)
                 if lead_date:
                     lookup = lookup.filter(date=lead_date)
+                existing_lines = {
+                    l.strip()
+                    for lead in lookup
+                    for l in lead.items.splitlines() if l.strip()
+                }
+                new_lines = {l.strip() for l in (request.data.get('items') or '').splitlines() if l.strip()}
                 existing = lookup.first()
-                if existing:
-                    existing_lines = {l.strip() for l in existing.items.splitlines() if l.strip()}
-                    new_lines = (request.data.get('items') or '').splitlines()
-                    to_add = [l for l in new_lines if l.strip() and l.strip() not in existing_lines]
-
-                    if to_add:
-                        base = existing.items.rstrip('\n')
-                        addition = '\n'.join(to_add)
-                        existing.items = (base + '\n' + addition) if base else addition
-                        existing.save()
-                        serializer = LeadSer(existing, context={'request': request})
-                        return Response(
-                            {'appended': True, 'added': len(to_add), **serializer.data},
-                            status=status.HTTP_200_OK,
-                        )
-
+                if existing and new_lines and new_lines.issubset(existing_lines):
                     serializer = LeadSer(existing, context={'request': request})
                     return Response(
                         {'duplicate': True, 'added': 0, **serializer.data},
                         status=status.HTTP_200_OK,
                     )
+                # Otherwise fall through and create a brand-new, separate lead entry.
 
         serializer = LeadSer(data=request.data, context={'request': request})
         if serializer.is_valid():

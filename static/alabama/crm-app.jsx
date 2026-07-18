@@ -44,8 +44,7 @@ function CrmApp() {
           : [lead, ...prev]);
         setView('table');
         showToast(
-          lead.appended ? 'Added ' + lead.added + ' message to existing lead'
-          : lead.duplicate ? 'Already in Leads — nothing new'
+          lead.duplicate ? 'Already in Leads — nothing new'
           : 'Lead created from email',
           'success');
       })
