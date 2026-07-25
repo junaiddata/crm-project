@@ -169,7 +169,16 @@ function LeadDetailModal({ lead, onUpdate, onClose }) {
               <input value={form.mobileNo} onChange={e => set('mobileNo', e.target.value)} style={inputStyle} placeholder="Phone number" />
             </div>
             <div style={fieldStyle}>
-              <label style={labelStyle}>Email</label>
+              <label style={labelStyle}>
+                Email
+                {form.emailId && (
+                  <a href={'/alabama/emails/thread/' + encodeURIComponent(form.emailId.trim().toLowerCase()) + '/'}
+                     target="_blank" rel="noopener noreferrer"
+                     style={{ marginLeft: 8, fontWeight: 600, textTransform: 'none', letterSpacing: 0, color: '#1d4ed8' }}>
+                    View thread ↗
+                  </a>
+                )}
+              </label>
               <input value={form.emailId} onChange={e => set('emailId', e.target.value)} style={inputStyle} placeholder="Email" />
             </div>
             <div style={fieldStyle}>

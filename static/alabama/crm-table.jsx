@@ -160,6 +160,23 @@ function ItemsCell({ text }) {
   );
 }
 
+// ── Email Cell: links out to the matching thread in /alabama/emails/ ─────────
+function EmailCell({ email }) {
+  const href = '/alabama/emails/thread/' + encodeURIComponent(email.trim().toLowerCase()) + '/';
+  return (
+    <span className="crm-cell-text crm-email-cell" title={email}>
+      <span className="crm-email-text">{email}</span>
+      <a className="crm-email-link" href={href} target="_blank" rel="noopener noreferrer"
+         onClick={e => e.stopPropagation()} title="View email thread">
+        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+          <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+        </svg>
+      </a>
+    </span>
+  );
+}
+
 // ── Main Table ───────────────────────────────────────────────────────────────
 function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
   const [editCell, setEditCell] = React.useState(null);
@@ -314,6 +331,7 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
     const val = lead[col.key];
     if (!val) return <span className="crm-cell-empty">—</span>;
     if (col.key === 'items') return <ItemsCell text={val} />;
+    if (col.key === 'emailId') return <EmailCell email={val} />;
     return <span className="crm-cell-text" title={val}>{val}</span>;
   }
 
@@ -375,4 +393,4 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
   );
 }
 
-Object.assign(window, { CrmTable, TABLE_COLUMNS, FileCell, ItemsCell });
+Object.assign(window, { CrmTable, TABLE_COLUMNS, FileCell, ItemsCell, EmailCell });
