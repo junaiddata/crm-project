@@ -203,6 +203,18 @@
       overflow: visible;
     }
     .crm-cell-text { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .crm-email-cell { display: flex; align-items: center; gap: 4px; width: 100%; }
+    .crm-email-text-link {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+      color: #1d4ed8; text-decoration: none; font-weight: 500;
+    }
+    .crm-email-text-link:hover { text-decoration: underline; color: #1e40af; }
+    .crm-email-edit-btn {
+      flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border: none; background: none; cursor: pointer;
+      border-radius: 4px; color: #cbd5e1; padding: 0;
+    }
+    .crm-email-edit-btn:hover { color: #475569; background: #f1f5f9; }
     .crm-cell-empty { color: #cbd5e1; }
     .crm-td-locked { cursor: not-allowed; background: #fafbfc; }
     .crm-td-locked:hover { background: #f4f6f8; }
