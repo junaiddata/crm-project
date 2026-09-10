@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -17,6 +18,9 @@ from .models import (
 from .utils import fetch_emails, send_email, test_connection
 
 logger = logging.getLogger(__name__)
+
+# Sender cards per page on the dashboard inbox list.
+THREADS_PER_PAGE = 15
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -102,9 +106,30 @@ def email_dashboard(request):
 
     groups = _threads_by_counterpart(qs)
 
+    # Paginate the sender cards. The grouping happens in Python (one card per
+    # counterpart), so the full list has to be built before it can be sliced.
+    paginator = Paginator(groups, THREADS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # Elided range ("1 2 … 7 8 9 … 20") — computed here because the template
+    # can't pass the current page number to get_elided_page_range(). Gaps come
+    # through as None so the template can render them as a plain "…".
+    page_range = [None if n == paginator.ELLIPSIS else n
+                  for n in paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)]
+
+    # Query string for the page links, minus the page number itself, so the
+    # active filter/search/date range survives paging.
+    qparams = request.GET.copy()
+    qparams.pop('page', None)
+    base_qs = qparams.urlencode()
+
     return render(request, tpl(request, 'email_dashboard.html'), {
-        'groups': groups,
-        'shown_count': len(groups),
+        'groups': page_obj.object_list,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'page_range': page_range,
+        'base_qs': base_qs,
+        'shown_count': paginator.count,
         'active_filter': active_filter,
         'search': search,
         'date_from': date_from if pf else '',

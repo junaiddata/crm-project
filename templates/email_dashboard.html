@@ -257,6 +257,31 @@
     }
     @keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
 
+
+    /* ── Pagination ── */
+    .pager {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px; padding: 14px 28px 4px;
+    }
+    .pager-info { font-size: 12px; color: #64748b; }
+    .pager-links { display: flex; align-items: center; gap: 4px; }
+    .pager-btn {
+      min-width: 32px; height: 32px; padding: 0 9px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+      border: 1px solid #e2e8f0; border-radius: 7px; background: #fff;
+      color: #475569; font-size: 12.5px; font-weight: 600;
+      text-decoration: none; cursor: pointer; transition: all 0.13s;
+    }
+    .pager-btn:hover { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+    .pager-btn.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+    .pager-btn.active:hover { background: #1e40af; border-color: #1e40af; color: #fff; }
+    .pager-btn.disabled { opacity: 0.45; pointer-events: none; }
+    .pager-gap { padding: 0 2px; color: #94a3b8; font-size: 12.5px; }
+
+    @media (max-width: 720px) {
+      .pager { padding: 12px 18px 4px; }
+    }
+
     @media (max-width: 720px) {
       .row-sender { width: 120px; }
       .row-subject { max-width: 50%; }
@@ -443,6 +468,51 @@
   {% endwith %}
   {% endfor %}
 </div>
+
+<!-- Pagination -->
+{% if paginator.num_pages > 1 %}
+<div class="pager">
+  <div class="pager-info">
+    Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ paginator.count }} sender{{ paginator.count|pluralize }}
+    &nbsp;·&nbsp; Page {{ page_obj.number }} of {{ paginator.num_pages }}
+  </div>
+  <div class="pager-links">
+    {% if page_obj.has_previous %}
+    <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      Prev
+    </a>
+    {% else %}
+    <span class="pager-btn disabled">
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+      Prev
+    </span>
+    {% endif %}
+
+    {% for num in page_range %}
+      {% if not num %}
+      <span class="pager-gap">…</span>
+      {% elif num == page_obj.number %}
+      <span class="pager-btn active">{{ num }}</span>
+      {% else %}
+      <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&amp;{% endif %}page={{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+    <a class="pager-btn" href="?{% if base_qs %}{{ base_qs }}&amp;{% endif %}page={{ page_obj.next_page_number }}">
+      Next
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </a>
+    {% else %}
+    <span class="pager-btn disabled">
+      Next
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 {% else %}
 <div class="empty-wrap">
   <div class="empty-state">
