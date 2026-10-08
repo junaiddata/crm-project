@@ -59,6 +59,8 @@
       transition: box-shadow 0.15s;
     }
     .stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    a.stat-card { text-decoration: none; color: inherit; cursor: pointer; }
+    a.stat-card.active { box-shadow: 0 0 0 2px #111827, 0 4px 12px rgba(0,0,0,0.1); }
     .stat-icon { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .stat-val { font-size: 26px; font-weight: 800; line-height: 1; color: #0f172a; }
     .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 3px; }
@@ -329,30 +331,31 @@
 
 <!-- Stats strip -->
 <div class="stats-strip">
-  <div class="stat-card">
+  <a class="stat-card {% if not active_range %}active{% endif %}" href="?filter=all{% if search %}&q={{ search }}{% endif %}">
     <div class="stat-icon" style="background:#f4f4f5;color:#111827;">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
     </div>
     <div><div class="stat-val">{{ total }}</div><div class="stat-lbl">Total emails</div></div>
-  </div>
-  <div class="stat-card">
+  </a>
+  <a class="stat-card {% if active_range == 'today' %}active{% endif %}" href="?range=today{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}{% if search %}&q={{ search }}{% endif %}">
     <div class="stat-icon" style="background:#dcfce7;color:#15803d;">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
     </div>
     <div><div class="stat-val">{{ today_count }}</div><div class="stat-lbl">Today</div></div>
-  </div>
-  <div class="stat-card">
+  </a>
+  <a class="stat-card {% if active_range == 'week' %}active{% endif %}" href="?range=week{% if active_filter != 'all' %}&filter={{ active_filter }}{% endif %}{% if search %}&q={{ search }}{% endif %}">
     <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;">
       <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
     </div>
     <div><div class="stat-val">{{ week_count }}</div><div class="stat-lbl">This week</div></div>
-  </div>
+  </a>
 </div>
 
 <!-- Controls -->
 <div class="controls">
   <form method="get" style="display:contents;">
     {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if active_range %}<input type="hidden" name="range" value="{{ active_range }}">{% endif %}
     {% if search %}<input type="hidden" name="q" value="{{ search }}">{% endif %}
     <div class="date-filter">
       <span class="date-filter-lbl">From</span>
@@ -361,13 +364,14 @@
       <input type="date" name="to" value="{{ date_to }}">
       <button type="submit" class="date-apply">Apply</button>
       {% if date_from or date_to %}
-      <a href="?{% if active_filter != 'all' %}filter={{ active_filter }}&{% endif %}{% if search %}q={{ search }}{% endif %}" class="date-clear">Clear</a>
+      <a href="?{% if active_filter != 'all' %}filter={{ active_filter }}&{% endif %}{% if active_range %}range={{ active_range }}&{% endif %}{% if search %}q={{ search }}{% endif %}" class="date-clear">Clear</a>
       {% endif %}
     </div>
   </form>
 
   <form method="get" style="display:contents;">
     {% if active_filter != 'all' %}<input type="hidden" name="filter" value="{{ active_filter }}">{% endif %}
+    {% if active_range %}<input type="hidden" name="range" value="{{ active_range }}">{% endif %}
     {% if date_from %}<input type="hidden" name="from" value="{{ date_from }}">{% endif %}
     {% if date_to %}<input type="hidden" name="to" value="{{ date_to }}">{% endif %}
     <div class="search-wrap">
@@ -377,11 +381,11 @@
   </form>
 
   <div class="filter-tabs">
-    <a href="?filter=all{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
+    <a href="?filter=all{% if active_range %}&range={{ active_range }}{% endif %}{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'all' %}active{% endif %}">
       All <span class="tab-count">{{ total }}</span>
     </a>
-    <a href="?filter=replied{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
+    <a href="?filter=replied{% if active_range %}&range={{ active_range }}{% endif %}{% if search %}&q={{ search }}{% endif %}{% if date_from %}&from={{ date_from }}{% endif %}{% if date_to %}&to={{ date_to }}{% endif %}"
        class="filter-tab {% if active_filter == 'replied' %}active{% endif %}">
       Replied <span class="tab-count">{{ replied_count }}</span>
     </a>

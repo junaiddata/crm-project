@@ -104,6 +104,15 @@ def email_dashboard(request):
     today_count = base.filter(received_at__date=today).count()
     week_count  = base.filter(received_at__date__gte=week_start).count()
 
+    # Clickable stat cards: ?range=today / ?range=week narrows the list.
+    active_range = request.GET.get('range', '')
+    if active_range == 'today':
+        qs = qs.filter(received_at__date=today)
+    elif active_range == 'week':
+        qs = qs.filter(received_at__date__gte=week_start)
+    else:
+        active_range = ''
+
     groups = _threads_by_counterpart(qs)
 
     # Paginate the sender cards. The grouping happens in Python (one card per
@@ -131,6 +140,7 @@ def email_dashboard(request):
         'base_qs': base_qs,
         'shown_count': paginator.count,
         'active_filter': active_filter,
+        'active_range': active_range,
         'search': search,
         'date_from': date_from if pf else '',
         'date_to': date_to if pt else '',

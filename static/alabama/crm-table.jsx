@@ -121,7 +121,7 @@ function ItemsCell({ text }) {
   const parts = [];
   let last = 0, m;
   while ((m = URL_RE.exec(text)) !== null) {
-    if (m.index > last) parts.push({ t: 'text', v: text.slice(last, m.index) });
+    if (m.index > last) parts.push({ t: 'text', v: text.slice(last, m.index).replace(/(?:Document|Image|Video|Audio):\s*$/i, '') });
     parts.push({ t: isImg(m[0]) ? 'img' : 'url', v: m[0] });
     last = m.index + m[0].length;
   }
@@ -135,8 +135,7 @@ function ItemsCell({ text }) {
 
   return (
     <span className="crm-cell-text" title={text}>
-      {parts.map((p, i) => {
-        if (p.t === 'text') return <span key={i}>{p.v}</span>;
+      {parts.filter(p => p.t !== 'text').map((p, i) => {
         if (p.t === 'img') return (
           <a key={i} href={p.v} target="_blank" rel="noopener noreferrer" className="crm-img-link"
              onClick={e => e.stopPropagation()}
@@ -151,6 +150,8 @@ function ItemsCell({ text }) {
              className="crm-url-link" onClick={e => e.stopPropagation()}>🔗 Link</a>
         );
       })}
+      {/* Links come first so they stay visible when the text is truncated */}
+      <span>{parts.filter(p => p.t === 'text').map(p => p.v).join(' ').replace(/\s+/g, ' ').trim()}</span>
       {preview && (
         <div className="crm-img-preview" style={{ left: preview.x, top: preview.y }}>
           <img src={preview.url} alt="" />

@@ -87,9 +87,11 @@ function StatusBadge({ status, compact }) {
 }
 
 // --- Stat Card ---
-function StatCard({ label, value, icon, color, subtitle }) {
+function StatCard({ label, value, icon, color, subtitle, onClick, active }) {
   return (
-    <div className="crm-stat-card">
+    <div className="crm-stat-card"
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer', boxShadow: active ? '0 0 0 2px ' + color + ', 0 4px 12px rgba(0,0,0,0.08)' : undefined } : undefined}>
       <div className="crm-stat-icon" style={{ background: color + '18', color: color }}>
         <CrmIcon name={icon} size={20} />
       </div>
