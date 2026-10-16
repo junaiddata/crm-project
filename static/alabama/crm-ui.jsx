@@ -217,9 +217,9 @@ function LeadDetailModal({ lead, onUpdate, onClose }) {
             </div>
             <div style={fieldStyle}>
               <label style={labelStyle}>Lead Status</label>
-              <select value={form.leadStatus} onChange={e => set('leadStatus', e.target.value)} style={inputStyle}>
-                <option value="">New</option>
-                {CRM_LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              <select value={form.leadProgress || ''} onChange={e => set('leadProgress', e.target.value)} style={inputStyle}>
+                <option value="">—</option>
+                {CRM_LEAD_PROGRESS.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>

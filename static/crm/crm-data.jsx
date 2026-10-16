@@ -4,6 +4,17 @@ const CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF'];
 const CRM_PLATFORMS = ['Whatsapp', 'Email', 'Phone Call', 'Website'];
 const CRM_LEAD_STATUSES = ['Approved', 'Rejected', 'Will Buy in Future', 'Price too high', 'Not required'];
 
+// "Lead Status" column - pipeline stage, separate from the Approved/Rejected "Status".
+const CRM_LEAD_PROGRESS = ['Processing', 'Quotation sent', 'Partially quotation sent', 'Items not Available', 'Pricing issues', 'Junk'];
+const CRM_PROGRESS_CONFIG = {
+  'Processing':               { bg: '#dbeafe', text: '#1e40af', dot: '#3b82f6' },
+  'Quotation sent':           { bg: '#dcfce7', text: '#166534', dot: '#22c55e' },
+  'Partially quotation sent': { bg: '#ccfbf1', text: '#115e59', dot: '#14b8a6' },
+  'Items not Available':      { bg: '#ffedd5', text: '#9a3412', dot: '#f97316' },
+  'Pricing issues':           { bg: '#ede9fe', text: '#5b21b6', dot: '#8b5cf6' },
+  'Junk':                     { bg: '#f3f4f6', text: '#4b5563', dot: '#6b7280' },
+};
+
 const CRM_PRODUCTS = [
   'Ariston Boiler /Copper Pipes & Fittings',
   'ARISTON WATER HEATER 50LTR',
@@ -132,7 +143,7 @@ function exportToCSV(leads) {
     (l.quotationFile && l.quotationFile.name) ? l.quotationFile.name : '',
     l.quotationUploadedBy || '',
     l.quotationDate, l.followUp1Date, l.followUp1Notes,
-    l.followUp2Date, l.followUp2Notes, l.leadStatus
+    l.followUp2Date, l.followUp2Notes, l.leadProgress
   ].map(v => '"' + (v||'').replace(/"/g, '""') + '"').join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -150,11 +161,11 @@ function exportToPDF(leads) {
   }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-  const head = [['Date', 'Name', 'Mobile', 'Email', 'Platform', 'Items', 'Sales', 'Quotation', 'Status']];
+  const head = [['Date', 'Name', 'Mobile', 'Email', 'Platform', 'Items', 'Sales', 'Quotation', 'Lead Status']];
   const body = leads.map(l => [
     l.date || '', l.name || '', l.mobileNo || '', l.emailId || '',
     l.platform || '', l.items || '', l.salesPerson || '',
-    l.quotation || '', l.leadStatus || '',
+    l.quotation || '', l.leadProgress || '',
   ]);
   doc.setFontSize(14); doc.text('Leads Export', 40, 38);
   doc.setFontSize(9); doc.setTextColor(120);
@@ -169,7 +180,7 @@ function exportToPDF(leads) {
 }
 
 Object.assign(window, {
-  CRM_SALESPEOPLE, CRM_PLATFORMS, CRM_LEAD_STATUSES, CRM_PRODUCTS,
+  CRM_SALESPEOPLE, CRM_PLATFORMS, CRM_LEAD_STATUSES, CRM_LEAD_PROGRESS, CRM_PROGRESS_CONFIG, CRM_PRODUCTS,
   CRM_STATUS_CONFIG, todayISO, formatDateDisplay, getCsrfToken,
   getStoredLeads, createLead, patchLead, removeLead, uploadFile, removeFile,
   exportToCSV, exportToPDF,

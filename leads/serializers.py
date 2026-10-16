@@ -15,6 +15,7 @@ class LeadSerializer(serializers.ModelSerializer):
     followUp2Date   = serializers.DateField(source='follow_up2_date', allow_null=True, required=False)
     followUp2Notes  = serializers.CharField(source='follow_up2_notes', allow_blank=True, required=False)
     leadStatus      = serializers.CharField(source='lead_status', allow_blank=True, required=False)
+    leadProgress    = serializers.CharField(source='lead_progress', allow_blank=True, required=False)
     quotationFile   = serializers.SerializerMethodField()
     source          = serializers.CharField(read_only=True)
 
@@ -24,7 +25,7 @@ class LeadSerializer(serializers.ModelSerializer):
             'id', 'date', 'mobileNo', 'emailId', 'name', 'platform', 'items',
             'salesPerson', 'quotation', 'quotationFile', 'quotationUploadedBy', 'quotationDate',
             'followUp1Date', 'followUp1Notes', 'followUp2Date', 'followUp2Notes',
-            'leadStatus', 'source',
+            'leadStatus', 'leadProgress', 'source',
         ]
 
     def get_quotationFile(self, obj):

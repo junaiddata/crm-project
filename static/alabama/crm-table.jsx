@@ -10,9 +10,9 @@ const TABLE_COLUMNS = [
   { key: 'salesPerson',  label: 'Sales Person', type: 'select',     options: () => CRM_SALESPEOPLE, w: 118 },
   { key: 'quotation',    label: 'Quotation',    type: 'file',       w: 155 },
   { key: 'quotationDate',label: 'Quote Date',   type: 'date',       w: 108 },
+  { key: 'leadProgress', label: 'Lead Status',  type: 'select',     options: () => CRM_LEAD_PROGRESS, w: 168 },
   { key: 'followUp1',    label: 'Follow Up 1',  type: 'followup',   dateKey: 'followUp1Date', notesKey: 'followUp1Notes', w: 165 },
   { key: 'followUp2',    label: 'Follow Up 2',  type: 'followup',   dateKey: 'followUp2Date', notesKey: 'followUp2Notes', w: 165 },
-  { key: 'leadStatus',   label: 'Status',       type: 'status',     w: 148 },
 ];
 
 // ── File Cell (self-contained, own ref) ─────────────────────────────────────
@@ -333,6 +333,14 @@ function CrmTable({ leads, onUpdateLead, onDeleteLead, sortBy, onSort }) {
     }
     const val = lead[col.key];
     if (!val) return <span className="crm-cell-empty">—</span>;
+    if (col.key === 'leadProgress') {
+      const c = CRM_PROGRESS_CONFIG[val] || { bg: '#f1f5f9', text: '#64748b', dot: '#94a3b8' };
+      return (
+        <span className="crm-badge crm-badge-sm" style={{ background: c.bg, color: c.text }}>
+          <span className="crm-badge-dot" style={{ background: c.dot }}></span>{val}
+        </span>
+      );
+    }
     if (col.key === 'items') return <ItemsCell text={val} />;
     if (col.key === 'emailId') return <EmailCell email={val} onEdit={() => startEdit(rowId, col, lead)} />;
     return <span className="crm-cell-text" title={val}>{val}</span>;

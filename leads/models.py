@@ -52,6 +52,8 @@ class Lead(models.Model):
     follow_up2_date  = models.DateField(null=True, blank=True)
     follow_up2_notes = models.TextField(blank=True)
     lead_status      = models.CharField(max_length=50, blank=True)
+    # Pipeline stage (Processing, Quotation sent, ...), separate from lead_status.
+    lead_progress    = models.CharField(max_length=50, blank=True)
     source           = models.CharField(max_length=20, blank=True)  # e.g. 'whatsapp' when auto-added
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
@@ -161,6 +163,7 @@ class AlabamaLead(models.Model):
     follow_up2_date  = models.DateField(null=True, blank=True)
     follow_up2_notes = models.TextField(blank=True)
     lead_status      = models.CharField(max_length=50, blank=True)
+    lead_progress    = models.CharField(max_length=50, blank=True)
     source           = models.CharField(max_length=20, blank=True)
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)

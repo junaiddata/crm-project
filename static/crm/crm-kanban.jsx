@@ -4,27 +4,22 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
   const [editingLead, setEditingLead] = React.useState(null);
 
   const columns = [
-    { status: '', label: 'New', color: '#94a3b8' },
-    { status: 'Approved', label: 'Approved', color: '#22c55e' },
-    { status: 'Rejected', label: 'Rejected', color: '#ef4444' },
-    { status: 'Will Buy in Future', label: 'Will Buy in Future', color: '#eab308' },
-    { status: 'Price too high', label: 'Price too high', color: '#8b5cf6' },
-    { status: 'Not required', label: 'Not required', color: '#6b7280' },
+    { status: '', label: 'No status', color: '#94a3b8', bg: '#f8fafc' },
+    ...CRM_LEAD_PROGRESS.map(s => ({ status: s, label: s, color: CRM_PROGRESS_CONFIG[s].dot, bg: CRM_PROGRESS_CONFIG[s].bg + '55' })),
   ];
 
   function getColumnLeads(status) {
-    return leads.filter(l => (l.leadStatus || '') === status);
+    return leads.filter(l => (l.leadProgress || '') === status);
   }
 
   function handleStatusChange(leadId, newStatus) {
-    onUpdateLead(leadId, { leadStatus: newStatus });
+    onUpdateLead(leadId, { leadProgress: newStatus });
   }
 
   return (
     <div className="crm-kanban">
       {columns.map(col => {
         const colLeads = getColumnLeads(col.status);
-        const cfg = CRM_STATUS_CONFIG[col.status] || CRM_STATUS_CONFIG[''];
         return (
           <div key={col.status} className="crm-kanban-col">
             <div className="crm-kanban-header">
@@ -34,7 +29,7 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
               </div>
               <span className="crm-kanban-count">{colLeads.length}</span>
             </div>
-            <div className="crm-kanban-body" style={{ background: cfg.kanbanBg }}>
+            <div className="crm-kanban-body" style={{ background: col.bg }}>
               {colLeads.map(lead => (
                 <div key={lead.id} className="crm-kanban-card" onClick={() => setEditingLead(lead)}>
                   <div className="crm-kc-top">
@@ -75,10 +70,10 @@ function CrmKanban({ leads, onUpdateLead, onDeleteLead }) {
                     </div>
                   )}
                   <div className="crm-kc-status-row" onClick={e => e.stopPropagation()}>
-                    <select className="crm-kc-status-select" value={lead.leadStatus || ''}
+                    <select className="crm-kc-status-select" value={lead.leadProgress || ''}
                       onChange={e => handleStatusChange(lead.id, e.target.value)}>
-                      <option value="">New</option>
-                      {CRM_LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      <option value="">No status</option>
+                      {CRM_LEAD_PROGRESS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </div>

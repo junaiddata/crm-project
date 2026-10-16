@@ -7,7 +7,7 @@ function CrmApp() {
   const [search, setSearch] = React.useState('');
   const [filterSales, setFilterSales] = React.useState('');
   const [filterPlatform, setFilterPlatform] = React.useState('');
-  const [filterStatus, setFilterStatus] = React.useState('__all__');
+  const [filterProgress, setFilterProgress] = React.useState('');
   const [quickFilter, setQuickFilter] = React.useState('');  // set by clicking a dashboard card
   const [sortBy, setSortBy] = React.useState({ field: 'date', dir: 'desc' });
   const [toast, setToast] = React.useState(null);
@@ -155,10 +155,10 @@ function CrmApp() {
 
     if (filterSales) result = result.filter(l => l.salesPerson === filterSales);
     if (filterPlatform) result = result.filter(l => l.platform === filterPlatform);
-    if (filterStatus !== '__all__') result = result.filter(l => (l.leadStatus || '') === filterStatus);
+    if (filterProgress) result = result.filter(l => (l.leadProgress || '') === filterProgress);
 
-    if (quickFilter === 'approved') result = result.filter(l => l.leadStatus === 'Approved');
-    else if (quickFilter === 'pending') result = result.filter(l => !l.leadStatus);
+    if (quickFilter === 'sent') result = result.filter(l => l.leadProgress === 'Quotation sent');
+    else if (quickFilter === 'pending') result = result.filter(l => !l.leadProgress);
     else if (quickFilter === 'quoted') result = result.filter(l => l.quotation || l.quotationFile);
     else if (quickFilter === 'month') {
       const now = new Date();
@@ -182,13 +182,13 @@ function CrmApp() {
     }
 
     return result;
-  }, [leads, search, filterSales, filterPlatform, filterStatus, quickFilter, sortBy]);
+  }, [leads, search, filterSales, filterPlatform, filterProgress, quickFilter, sortBy]);
 
   // --- Dashboard stats ---
   const stats = React.useMemo(() => {
     const total = leads.length;
-    const approved = leads.filter(l => l.leadStatus === 'Approved').length;
-    const pending = leads.filter(l => !l.leadStatus).length;
+    const approved = leads.filter(l => l.leadProgress === 'Quotation sent').length;
+    const pending = leads.filter(l => !l.leadProgress).length;
     const quoted = leads.filter(l => l.quotation || l.quotationFile).length;
     const now = new Date();
     const thisMonth = leads.filter(l => {
@@ -200,7 +200,7 @@ function CrmApp() {
     return { total, approved, pending, quoted, thisMonth, rate };
   }, [leads]);
 
-  const hasFilters = search || filterSales || filterPlatform || filterStatus !== '__all__' || quickFilter;
+  const hasFilters = search || filterSales || filterPlatform || filterProgress || quickFilter;
 
   // Clicking a dashboard card filters the list to it; clicking it again (or Total) clears.
   const pickQuick = key => setQuickFilter(prev => prev === key ? '' : key);
@@ -243,8 +243,8 @@ function CrmApp() {
       {/* Dashboard */}
       <div className="crm-dashboard">
         <StatCard label="Total Leads" value={stats.total} icon="users" onClick={() => setQuickFilter('')} active={!quickFilter} color="#1d4ed8" />
-        <StatCard label="Approved" value={stats.approved} icon="check" onClick={() => pickQuick('approved')} active={quickFilter === 'approved'} color="#059669" subtitle={stats.rate + '% conversion'} />
-        <StatCard label="Pending" value={stats.pending} icon="clock" onClick={() => pickQuick('pending')} active={quickFilter === 'pending'} color="#d97706" subtitle="No status yet" />
+        <StatCard label="Quotation Sent" value={stats.approved} icon="check" onClick={() => pickQuick('sent')} active={quickFilter === 'sent'} color="#059669" subtitle={stats.rate + '% of leads'} />
+        <StatCard label="Pending" value={stats.pending} icon="clock" onClick={() => pickQuick('pending')} active={quickFilter === 'pending'} color="#d97706" subtitle="No lead status yet" />
         <StatCard label="Quoted" value={stats.quoted} icon="chart" onClick={() => pickQuick('quoted')} active={quickFilter === 'quoted'} color="#7c3aed" subtitle="With quotation" />
         <StatCard label="This Month" value={stats.thisMonth} icon="calendar" onClick={() => pickQuick('month')} active={quickFilter === 'month'} color="#0284c7" />
       </div>
@@ -270,13 +270,12 @@ function CrmApp() {
             <option value="">All Platforms</option>
             {CRM_PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
-          <select className="crm-filter-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-            <option value="__all__">All Statuses</option>
-            <option value="">New</option>
-            {CRM_LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          <select className="crm-filter-select" value={filterProgress} onChange={e => setFilterProgress(e.target.value)}>
+            <option value="">All Lead Statuses</option>
+            {CRM_LEAD_PROGRESS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           {hasFilters && (
-            <button className="crm-clear-filters" onClick={() => { setSearch(''); setFilterSales(''); setFilterPlatform(''); setFilterStatus('__all__'); setQuickFilter(''); }}>
+            <button className="crm-clear-filters" onClick={() => { setSearch(''); setFilterSales(''); setFilterPlatform(''); setFilterProgress(''); setQuickFilter(''); }}>
               Clear filters
             </button>
           )}
