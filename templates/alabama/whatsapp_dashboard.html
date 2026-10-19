@@ -17,7 +17,7 @@
     }
 
     /* ── App shell: two panes like WhatsApp Web ── */
-    .wa-app { display: flex; height: 100vh; }
+    .wa-app { display: flex; height: 100vh; height: 100dvh; }
 
     /* A subtle top accent band, WhatsApp-Web style */
     .wa-app::before {
@@ -153,6 +153,12 @@
     .me-hint  { font-size: 13px; color: #8696a0; display: flex; align-items: center; gap: 6px; margin-top: 8px; }
 
     @media (max-width: 820px) {
+      .wa-sidebar { width: 100%; max-width: none; }
+      body.chat-open .wa-sidebar { display: none; }
+      body:not(.chat-open) .wa-main { display: none; }
+    }
+    /* Touch tablets (e.g. Galaxy Tab A9): use the single-pane layout too */
+    @media (max-width: 1100px) and (pointer: coarse) {
       .wa-sidebar { width: 100%; max-width: none; }
       body.chat-open .wa-sidebar { display: none; }
       body:not(.chat-open) .wa-main { display: none; }

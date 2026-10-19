@@ -259,6 +259,12 @@
         Junaid World
         <span class="arrow">→</span>
       </a>
+      {% if user.is_authenticated %}
+      <form method="post" action="{% url 'logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="nav-link" style="border:1px solid #e2e8f0; background:#fff; cursor:pointer; font-family:inherit;">Logout</button>
+      </form>
+      {% endif %}
     </div>
   </nav>
 
