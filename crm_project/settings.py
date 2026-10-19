@@ -31,6 +31,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'crm_project.middleware.AlabamaOnlyMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -162,3 +163,7 @@ ALABAMA_WHATSAPP_NUMBER_LABELS = {
 
 # The number Alabama's broadcast page defaults to (one of the IDs above).
 ALABAMA_WHATSAPP_DEFAULT_PHONE_ID = os.environ.get('ALABAMA_WHATSAPP_DEFAULT_PHONE_ID', '1269738916230549')
+
+# Users restricted to /alabama/* (the 'alabama_only' group does the same).
+# Enforced by crm_project.middleware.AlabamaOnlyMiddleware.
+ALABAMA_ONLY_USERS = ['sreejith']

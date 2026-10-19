@@ -203,7 +203,7 @@ def whatsapp_reply(request, pk):
     return JsonResponse({'error': 'Failed to send — check WHATSAPP_ACCESS_TOKEN and phone number ID'}, status=502)
 
 
-CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF']
+CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF','SREEJITH']
 
 
 class LeadListCreateView(APIView):
