@@ -7,6 +7,7 @@ from email.message import EmailMessage as MimeMessage
 from email.utils import formataddr, make_msgid
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.utils import timezone
 from django.utils.html import strip_tags
 
@@ -29,6 +30,8 @@ def _clean_body(text_part, html_part):
 
 
 def _aware(dt):
+    if dt and dt.year < 2000:
+        return timezone.now()  # invalid/missing Date header parses as 1900
     if dt and timezone.is_naive(dt):
         return timezone.make_aware(dt, timezone.get_default_timezone())
     return dt or timezone.now()
@@ -115,45 +118,52 @@ def fetch_emails(limit=500, *, settings_model=EmailSettings, log_model=EmailLog,
                 return 0, f'Fetched 0 new message(s){purged_note}'
 
             for msg in mailbox.fetch(AND(uid=new_uids), mark_seen=False, bulk=True):
-                from_addr = (msg.from_ or '').strip().lower()
-                if not from_addr or from_addr == cfg.email_address.lower():
-                    continue  # skip our own copies / malformed senders
+                # One bad message must never block the rest of the inbox:
+                # each is saved in its own savepoint and failures are skipped.
+                try:
+                    with transaction.atomic():
+                        from_addr = (msg.from_ or '').strip().lower()
+                        if not from_addr or from_addr == cfg.email_address.lower():
+                            continue  # skip our own copies / malformed senders
 
-                message_id = (msg.headers.get('message-id', ('',))[0] or '').strip()
-                if not message_id:
-                    message_id = f'<no-id-{msg.uid}-{msg.date_str}@{cfg.imap_host}>'
+                        message_id = (msg.headers.get('message-id', ('',))[0] or '').strip()
+                        if not message_id:
+                            message_id = f'<no-id-{msg.uid}-{msg.date_str}@{cfg.imap_host}>'
 
-                from_name = ''
-                if msg.from_values:
-                    from_name = (msg.from_values.name or '').strip()
+                        from_name = ''
+                        if msg.from_values:
+                            from_name = (msg.from_values.name or '').strip()
 
-                log, created = log_model.objects.get_or_create(
-                    message_id=message_id,
-                    defaults={
-                        'direction': 'in',
-                        'counterpart': from_addr,
-                        'counterpart_name': from_name,
-                        'subject': (msg.subject or '').strip(),
-                        'body': _clean_body(msg.text, msg.html),
-                        'in_reply_to': (msg.headers.get('in-reply-to', ('',))[0] or '').strip(),
-                        'received_at': _aware(msg.date),
-                    },
-                )
-                if not created:
+                        log, created = log_model.objects.get_or_create(
+                            message_id=message_id[:512],
+                            defaults={
+                                'direction': 'in',
+                                'counterpart': from_addr[:255],
+                                'counterpart_name': from_name[:255],
+                                'subject': (msg.subject or '').strip(),
+                                'body': _clean_body(msg.text, msg.html),
+                                'in_reply_to': (msg.headers.get('in-reply-to', ('',))[0] or '').strip()[:512],
+                                'received_at': _aware(msg.date),
+                            },
+                        )
+                        if not created:
+                            continue
+
+                        for att in msg.attachments:
+                            payload = att.payload
+                            if not payload or len(payload) > MAX_ATTACHMENT_BYTES:
+                                continue
+                            record = attachment_model(
+                                email=log,
+                                filename=(att.filename or 'attachment')[:255],
+                                content_type=(att.content_type or '')[:100],
+                                size=len(payload),
+                            )
+                            record.file.save(att.filename or f'attachment-{log.pk}', ContentFile(payload), save=True)
+                        new_count += 1
+                except Exception:
+                    logger.exception('Skipping message uid=%s: could not be saved', getattr(msg, 'uid', '?'))
                     continue
-                new_count += 1
-
-                for att in msg.attachments:
-                    payload = att.payload
-                    if not payload or len(payload) > MAX_ATTACHMENT_BYTES:
-                        continue
-                    record = attachment_model(
-                        email=log,
-                        filename=att.filename or 'attachment',
-                        content_type=att.content_type or '',
-                        size=len(payload),
-                    )
-                    record.file.save(att.filename or f'attachment-{log.pk}', ContentFile(payload), save=True)
     except Exception as exc:
         logger.exception('IMAP fetch failed')
         cfg.last_fetch_at = timezone.now()
