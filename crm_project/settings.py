@@ -123,19 +123,26 @@ WHATSAPP_API_VERSION  = os.environ.get('WHATSAPP_API_VERSION', 'v22.0')
 WHATSAPP_APP_SECRET   = os.environ.get('WHATSAPP_APP_SECRET')
 # Verify token — a string you invent; must match what you enter in Meta's webhook config.
 WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN')
-# Phone Number IDs we own and handle natively (all 3 marketing numbers).
+# Retired numbers: removed from WhatsApp Manager, but their chat history stays
+# visible (read-only) in the CRM for follow-ups. They are excluded from the
+# active list below, so they can't be used for broadcasts or replies.
+#   1131190376754791 → +971 54 533 8872
+WHATSAPP_RETIRED_PHONE_NUMBER_IDS = ['1131190376754791']
+
+# Phone Number IDs we own and handle natively (active marketing numbers).
 # Comma-separated env override; defaults:
 #   1155539744315001 → +971 55 123 6158
-#   1131190376754791 → +971 54 533 8872
 #   623707730818076  → +971 4 236 7723
 WHATSAPP_PHONE_NUMBER_IDS = [
     pid.strip() for pid in os.environ.get(
         'WHATSAPP_PHONE_NUMBER_IDS',
-        '1155539744315001,1131190376754791,623707730818076',
-    ).split(',') if pid.strip()
+        '1155539744315001,623707730818076',
+    ).split(',')
+    if pid.strip() and pid.strip() not in WHATSAPP_RETIRED_PHONE_NUMBER_IDS
 ]
 
 # Friendly display labels for each Phone Number ID (shown in the WhatsApp dashboard filters).
+# Retired numbers keep their label so old chats still show the real phone number.
 WHATSAPP_NUMBER_LABELS = {
     '1155539744315001': '+971 55 123 6158',
     '1131190376754791': '+971 54 533 8872',

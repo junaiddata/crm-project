@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from crm_project.alabama_db import (
-    tpl, pick, is_alabama, wa_phone_ids, wa_labels, wa_default_phone_id,
+    tpl, pick, is_alabama, wa_phone_ids, wa_labels, wa_default_phone_id, wa_retired_ids,
 )
 from .models import (
     BroadcastJob, Lead, WhatsAppLead, WhatsAppOutbound,
@@ -27,6 +27,9 @@ from .models import (
 from .serializers import LeadSerializer, AlabamaLeadSerializer
 
 logger = logging.getLogger(__name__)
+
+RETIRED_SEND_ERROR = ('This WhatsApp number has been removed — history is read-only. '
+                      'Please contact the customer from one of the active numbers.')
 
 
 def _verify_meta_signature(request):
@@ -151,7 +154,9 @@ def whatsapp_webhook(request):
             _process_whatsapp_payload(payload)
         else:
             # Direct from Meta — only handle numbers we own natively (Junaid + Alabama).
+            # Retired numbers stay accepted so any message still in flight is saved.
             owned_ids = (getattr(settings, 'WHATSAPP_PHONE_NUMBER_IDS', []) +
+                         getattr(settings, 'WHATSAPP_RETIRED_PHONE_NUMBER_IDS', []) +
                          getattr(settings, 'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', []))
             _process_whatsapp_payload(payload, allowed_phone_ids=owned_ids)
     except Exception:
@@ -190,6 +195,8 @@ def whatsapp_reply(request, pk):
         return JsonResponse({'error': 'Message is required'}, status=400)
 
     from .utils import send_whatsapp_reply as send_reply
+    if wa_lead.business_phone_id in wa_retired_ids(request):
+        return JsonResponse({'error': RETIRED_SEND_ERROR}, status=400)
     success = send_reply(wa_lead.sender, message, phone_number_id=wa_lead.business_phone_id)
 
     if success:
@@ -490,6 +497,11 @@ def whatsapp_dashboard(request):
          'count': base.filter(business_phone_id=pid).count()}
         for pid in wa_phone_ids(request)
     ]
+    # Retired numbers keep a chip (only while they have history) so old chats stay filterable.
+    for pid in wa_retired_ids(request):
+        cnt = base.filter(business_phone_id=pid).count()
+        if cnt:
+            numbers.append({'id': pid, 'label': f'{labels.get(pid, pid)} (removed)', 'count': cnt})
 
     conversations = _wa_conversations(qs, labels)
     if unread_keys is not None:
@@ -704,7 +716,10 @@ def whatsapp_chat(request, sender):
         latest = all_incoming.order_by('-received_at').first()
         active_number = latest.business_phone_id if latest and latest.business_phone_id else ''
 
-    numbers = [{'id': pid, 'label': labels.get(pid, pid), 'active': pid == active_number}
+    retired_ids = wa_retired_ids(request)
+    numbers = [{'id': pid,
+                'label': labels.get(pid, pid) + (' (removed)' if pid in retired_ids else ''),
+                'active': pid == active_number}
                for pid in distinct]
 
     # Scope the thread to the active number (fall back to everything for legacy data).
@@ -757,6 +772,7 @@ def whatsapp_chat(request, sender):
         'numbers': numbers,
         'active_number': active_number,
         'active_label': labels.get(active_number, ''),
+        'active_retired': bool(active_number) and active_number in retired_ids,
         # When loaded inside the WhatsApp-Web shell's right pane, hide the
         # standalone CRM chrome and show only the conversation.
         'embed': request.GET.get('embed') == '1',
@@ -792,6 +808,8 @@ def whatsapp_chat_send(request, sender):
         return JsonResponse({'error': 'Message is required'}, status=400)
 
     business_phone_id = body.get('number') or _business_phone_id_for(sender, WhatsAppLeadM)
+    if business_phone_id in wa_retired_ids(request):
+        return JsonResponse({'error': RETIRED_SEND_ERROR}, status=400)
     from .utils import send_whatsapp_reply as send_reply
     success = send_reply(sender, message, phone_number_id=business_phone_id)
 
@@ -826,6 +844,8 @@ def whatsapp_chat_send_media(request, sender):
     mime_type  = file.content_type or 'application/octet-stream'
 
     business_phone_id = request.POST.get('number') or _business_phone_id_for(sender, WhatsAppLeadM)
+    if business_phone_id in wa_retired_ids(request):
+        return JsonResponse({'error': RETIRED_SEND_ERROR}, status=400)
     from .utils import upload_whatsapp_media, send_whatsapp_media, mime_to_whatsapp_type
     media_type = mime_to_whatsapp_type(mime_type)
 

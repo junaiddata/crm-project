@@ -33,6 +33,15 @@ def wa_phone_ids(request):
                 getattr(settings, 'ALABAMA_WHATSAPP_PHONE_NUMBER_IDS', []))
 
 
+def wa_retired_ids(request):
+    """Retired numbers (deleted in WhatsApp Manager): history stays visible, no sending.
+    Only Junaid has any; Alabama returns an empty list."""
+    from django.conf import settings
+    return pick(request,
+                getattr(settings, 'WHATSAPP_RETIRED_PHONE_NUMBER_IDS', []),
+                [])
+
+
 def wa_labels(request):
     from django.conf import settings
     return pick(request,

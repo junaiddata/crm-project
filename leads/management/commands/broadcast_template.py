@@ -23,12 +23,12 @@ Examples:
     python manage.py broadcast_template --csv leads.csv \
         --header-image-file C:/path/to/plumbing.jpg --dry-run
 
-    # Real send of the plumbing_marketing template from +971 54 533 8872
+    # Real send of the plumbing_marketing template from +971 55 123 6158
     python manage.py broadcast_template --csv leads.csv \
         --header-image-file C:/path/to/plumbing.jpg
 
 Defaults: template=plumbing_marketing, language=en,
-          from=1131190376754791 (+971 54 533 8872).
+          from=1155539744315001 (+971 55 123 6158).
 """
 import mimetypes
 import os
@@ -59,7 +59,7 @@ class Command(BaseCommand):
         parser.add_argument('--header-image-id',
                             help='Already-uploaded Meta media id for the header image.')
         parser.add_argument('--from', dest='phone_id', default=DEFAULT_PHONE_ID,
-                            help=f'Sending phone_number_id (default: {DEFAULT_PHONE_ID} = +971 54 533 8872).')
+                            help=f'Sending phone_number_id (default: {DEFAULT_PHONE_ID} = +971 55 123 6158).')
         parser.add_argument('--caption',
                             help='Caption shown under the broadcast in the chat thread '
                                  '(default: "Broadcast: <template>"). Use the template body text '

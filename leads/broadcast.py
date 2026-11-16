@@ -17,8 +17,9 @@ from django.core.files.storage import default_storage
 from .models import WhatsAppOutbound
 from .utils import send_whatsapp_template, upload_whatsapp_media
 
-# +971 54 533 8872 — the number we currently receive on.
-DEFAULT_PHONE_ID = '1131190376754791'
+# +971 55 123 6158 — default sending number for Junaid broadcasts.
+# (+971 54 533 8872 / 1131190376754791 is retired — see WHATSAPP_RETIRED_PHONE_NUMBER_IDS.)
+DEFAULT_PHONE_ID = '1155539744315001'
 
 
 def parse_numbers(raw_text):
