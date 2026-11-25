@@ -14,13 +14,17 @@ from call_logs.views import (
 )
 from emails.views import email_dashboard, email_thread, email_settings_page
 from crm_project.alabama_db import tpl
+from crm_project.middleware import is_junaid_only
 
 
 APK_PATH = settings.BASE_DIR / 'downloads' / 'CallTracker.apk'
 
 
 def landing(request):
-    return render(request, 'landing.html', {'alabama_url': settings.ALABAMA_URL})
+    return render(request, 'landing.html', {
+        'alabama_url': settings.ALABAMA_URL,
+        'show_alabama': not is_junaid_only(request.user),
+    })
 
 
 def alabama_landing(request):

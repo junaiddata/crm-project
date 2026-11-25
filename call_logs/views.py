@@ -10,6 +10,8 @@ from django.utils import timezone
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -81,6 +83,8 @@ class LogCallView(APIView):
 
 class CallLogListView(APIView):
     """GET /api/calls/ — list with optional filters."""
+    authentication_classes = [SessionAuthentication]
+    permission_classes     = [IsAuthenticated]
 
     def get(self, request):
         CallLogM = pick(request, CallLog, AlabamaCallLog)

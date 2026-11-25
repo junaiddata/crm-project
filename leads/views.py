@@ -12,6 +12,8 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -213,7 +215,14 @@ def whatsapp_reply(request, pk):
 CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF','SREEJITH']
 
 
-class LeadListCreateView(APIView):
+class LoggedInAPIView(APIView):
+    # Session login only: the site-restriction middleware checks the session
+    # user, so HTTP Basic auth must not be accepted here.
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+class LeadListCreateView(LoggedInAPIView):
     def get(self, request):
         LeadM = pick(request, Lead, AlabamaLead)
         LeadSer = pick(request, LeadSerializer, AlabamaLeadSerializer)
@@ -296,7 +305,7 @@ class LeadListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LeadDetailView(APIView):
+class LeadDetailView(LoggedInAPIView):
     def get_object(self, request, pk):
         LeadM = pick(request, Lead, AlabamaLead)
         return get_object_or_404(LeadM, pk=pk)
@@ -333,7 +342,7 @@ class LeadDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class LeadUploadView(APIView):
+class LeadUploadView(LoggedInAPIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, pk):
@@ -359,7 +368,7 @@ class LeadUploadView(APIView):
         return Response({'success': True})
 
 
-class SalespersonListView(APIView):
+class SalespersonListView(LoggedInAPIView):
     def get(self, request):
         return Response(CRM_SALESPEOPLE)
 

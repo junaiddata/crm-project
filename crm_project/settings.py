@@ -174,3 +174,6 @@ ALABAMA_WHATSAPP_DEFAULT_PHONE_ID = os.environ.get('ALABAMA_WHATSAPP_DEFAULT_PHO
 # Users restricted to /alabama/* (the 'alabama_only' group does the same).
 # Enforced by crm_project.middleware.AlabamaOnlyMiddleware.
 ALABAMA_ONLY_USERS = ['sreejith']
+# Users restricted to the main (Junaid) CRM, blocked from /alabama/*
+# (the 'junaid_only' group does the same).
+JUNAID_ONLY_USERS = ['arwa']
