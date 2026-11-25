@@ -1,6 +1,6 @@
 // CRM Configuration and API Utilities
 
-const CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF'];
+const CRM_SALESPEOPLE = ['RAFIQ', 'SIYAB', 'MUZAIN', 'AIJAZ', 'MUSHARAF', 'ARWA'];
 const CRM_PLATFORMS = ['Whatsapp', 'Email', 'Phone Call', 'Website'];
 const CRM_LEAD_STATUSES = ['Approved', 'Rejected', 'Will Buy in Future', 'Price too high', 'Not required'];
 
